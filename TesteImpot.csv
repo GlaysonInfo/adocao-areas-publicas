@@ -1,0 +1,4 @@
+codigo;nome;tipo;bairro;logradouro;metragem_m2;status;ativo;restricoes;latitude_centro;longitude_centro
+BETIM-AREA-0001;Praça da Matriz;Praça;Centro;Av. Principal, s/n;850;disponivel;1;Não permite estruturas permanentes;-19,9671;-44,1982
+BETIM-AREA-0002;Campo do Bom Retiro;Campo de Futebol;Bom Retiro;Av. B;13782;disponivel;1;Proibido cercar;;
+BETIM-AREA-0003;Canteiro Av. das Palmeiras;Canteiro;Jardim;Av. das Palmeiras, 1200;420;disponivel;1;Manter visibilidade de sinalização viária;;

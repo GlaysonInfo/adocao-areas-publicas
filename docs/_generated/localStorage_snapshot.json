@@ -1,0 +1,106 @@
+
+---
+
+## 4) Metadados automáticos (commit/diff) — via scripts
+
+### 4.1 Criar script: `scripts/as-built/generate_as_built.mjs`
+Crie e cole:
+
+```js
+import fs from "node:fs";
+import path from "node:path";
+import { execSync } from "node:child_process";
+
+const ROOT = process.cwd();
+const OUT_DIR = path.join(ROOT, "docs", "_generated");
+
+function ensureDir(p) {
+  fs.mkdirSync(p, { recursive: true });
+}
+
+function readText(p) {
+  try { return fs.readFileSync(p, "utf8"); } catch { return ""; }
+}
+
+function writeJson(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+}
+
+function writeText(file, data) {
+  fs.writeFileSync(file, data, "utf8");
+}
+
+function listFilesRecursive(dir, filterFn) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...listFilesRecursive(full, filterFn));
+    else if (!filterFn || filterFn(full)) out.push(full);
+  }
+  return out;
+}
+
+// 1) Rotas: parse simples de <Route path="..." element={<X/>} />
+function extractRoutes(appRoutesPath) {
+  const txt = readText(appRoutesPath);
+  const routes = [];
+  const re = /<Route\s+path="([^"]+)"\s+element={<([A-Za-z0-9_]+)\s*\/?>}\s*\/>/g;
+  let m;
+  while ((m = re.exec(txt))) {
+    routes.push({ path: m[1], component: m[2] });
+  }
+  return routes;
+}
+
+// 2) localStorage keys: buscar const KEY = "..."
+function extractStorageKeys(storageDir) {
+  const files = listFilesRecursive(storageDir, (p) => p.endsWith(".ts") || p.endsWith(".tsx"));
+  const keys = [];
+  const re = /\bconst\s+KEY\s*=\s*["']([^"']+)["']/g;
+
+  for (const f of files) {
+    const txt = readText(f);
+    let m;
+    while ((m = re.exec(txt))) {
+      keys.push({ file: path.relative(ROOT, f), key: m[1] });
+    }
+  }
+  return keys;
+}
+
+// 3) Git metadata
+function git(cmd) {
+  try { return execSync(cmd, { encoding: "utf8" }).trim(); } catch { return ""; }
+}
+
+function main() {
+  ensureDir(OUT_DIR);
+
+  const appRoutes = path.join(ROOT, "src", "routes", "AppRoutes.tsx");
+  const storageDir = path.join(ROOT, "src", "storage");
+
+  const routes = extractRoutes(appRoutes);
+  const storageKeys = extractStorageKeys(storageDir);
+
+  const version = {
+    branch: git("git rev-parse --abbrev-ref HEAD"),
+    commit: git("git rev-parse HEAD"),
+    status: git("git status --porcelain"),
+    date_utc: new Date().toISOString(),
+  };
+
+  const diffStat = git("git diff --stat");
+
+  writeJson(path.join(OUT_DIR, "routes.json"), routes);
+  writeJson(path.join(OUT_DIR, "storage_keys.json"), storageKeys);
+  writeJson(path.join(OUT_DIR, "version.json"), version);
+  writeText(path.join(OUT_DIR, "diff_stat.txt"), diffStat);
+
+  console.log("AS-BUILT generated:");
+  console.log("- docs/_generated/routes.json");
+  console.log("- docs/_generated/storage_keys.json");
+  console.log("- docs/_generated/version.json");
+  console.log("- docs/_generated/diff_stat.txt");
+}
+
+main();

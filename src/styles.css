@@ -1,0 +1,467 @@
+/* src/styles.css */
+
+/* =========================
+   THEME / TOKENS
+========================= */
+:root{
+  --bg-0: #f4fbf6;
+  --bg-1: #eaf7ee;
+
+  --card: rgba(255,255,255,.88);
+  --card-solid: #ffffff;
+
+  --text: #0f172a;
+  --muted: rgba(15, 23, 42, .72);
+
+  --green-900: #0b3b26;
+  --green-800: #0f5132;
+  --green-700: #146c43;
+  --green-600: #198754;
+  --green-500: #22c55e;
+
+  --border: rgba(15, 23, 42, .12);
+  --shadow: 0 10px 30px rgba(15, 23, 42, .08);
+  --radius: 14px;
+
+  --container: 1240px;
+  --container-wide: 1680px;
+
+  --gutter: 18px;
+}
+
+/* =========================
+   BASE / RESET
+========================= */
+*,
+*::before,
+*::after{ box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body{
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+  color: var(--text);
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* textura verde suave */
+  background:
+    radial-gradient(1100px 600px at 15% 0%, rgba(34,197,94,.18), transparent 60%),
+    radial-gradient(900px 520px at 85% 10%, rgba(16,185,129,.16), transparent 55%),
+    radial-gradient(700px 420px at 40% 90%, rgba(34,197,94,.10), transparent 55%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1));
+}
+
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .45;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(20, 108, 67, .06) 0px,
+      rgba(20, 108, 67, .06) 2px,
+      transparent 2px,
+      transparent 12px
+    );
+  mix-blend-mode: multiply;
+}
+
+img{ max-width: 100%; height: auto; display: block; }
+
+a{ color: #1d4ed8; text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+/* foco acessível */
+:focus-visible{
+  outline: 3px solid rgba(34,197,94,.55);
+  outline-offset: 2px;
+}
+
+/* =========================
+   TYPOGRAPHY
+========================= */
+h1,h2,h3{ letter-spacing: -0.02em; }
+h1{ font-size: clamp(28px, 3.2vw, 44px); margin: 0 0 6px 0; line-height: 1.1; }
+h2{ font-size: clamp(18px, 2.2vw, 26px); margin: 18px 0 10px; line-height: 1.2; }
+h3{ font-size: 16px; margin: 0 0 6px; }
+
+p{ line-height: 1.55; color: var(--muted); margin: 8px 0; }
+
+.hr{
+  border: 0;
+  height: 1px;
+  background: var(--border);
+  margin: 18px 0;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+.container{
+  width: min(var(--container), calc(100% - (2 * var(--gutter))));
+  margin-inline: auto;
+}
+
+.container--wide{
+  width: min(var(--container-wide), calc(100% - (2 * var(--gutter))));
+  margin-inline: auto;
+}
+
+/* ===== Containers (variantes) ===== */
+.container--wide{
+  width: min(1560px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.container--full{
+  width: calc(100% - 24px);
+  max-width: none;
+  margin: 0 auto;
+}
+
+.main{
+  padding: 18px 0 34px;
+  min-height: calc(100vh - 240px);
+}
+
+/* =========================
+   SURFACES
+========================= */
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+}
+
+.pad{ padding: 16px; }
+
+.grid{
+  display: grid;
+  gap: 14px;
+}
+.grid.cols-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.cols-3{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+@media (max-width: 980px){
+  .grid.cols-3{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 680px){
+  .grid.cols-2, .grid.cols-3{ grid-template-columns: 1fr; }
+}
+
+/* =========================
+   BUTTONS / FORMS
+========================= */
+button, .btn{
+  appearance: none;
+  border: 1px solid rgba(15, 23, 42, .14);
+  background: #fff;
+  color: rgba(15, 23, 42, .92);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform .06s ease, box-shadow .12s ease, background .12s ease;
+}
+button:hover, .btn:hover{ box-shadow: 0 10px 18px rgba(15,23,42,.08); }
+button:active, .btn:active{ transform: translateY(1px); }
+
+.btn--primary, button.primary{
+  background: linear-gradient(180deg, rgba(34,197,94,1), rgba(25,135,84,1));
+  border-color: rgba(11,59,38,.25);
+  color: white;
+}
+.btn--ghost{
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.30);
+  color: white;
+}
+.btn--sm{
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+input, select, textarea{
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,.92);
+  color: rgba(15,23,42,.92);
+}
+textarea{ resize: vertical; }
+
+/* =========================
+   BANNER
+========================= */
+.banner{
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: var(--green-900);
+}
+.banner__media{
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(90deg, rgba(11,59,38,.90), rgba(11,59,38,.35), rgba(11,59,38,.15)),
+    url("/banner.jpg");
+  background-size: cover;
+  background-position: center;
+  filter: saturate(1.08) contrast(1.02);
+  transform: scale(1.02);
+}
+.banner__inner{
+  position: relative;
+  padding: 22px 0 18px;
+  color: rgba(255,255,255,.92);
+}
+.banner__kicker{
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .88;
+}
+.banner__title{
+  color: #fff;
+  margin: 6px 0 6px;
+  line-height: 1.08;
+}
+.banner__subtitle{
+  margin: 0;
+  max-width: 78ch;
+  color: rgba(255,255,255,.86);
+}
+.banner__actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+/* =========================
+   TOP NAV
+========================= */
+.topnav{
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255,255,255,.80);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topnav__inner{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+.navlinks{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.navlinks a{
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: rgba(15, 23, 42, .88);
+}
+.navlinks a.active{
+  background: rgba(25, 135, 84, .12);
+  color: var(--green-800);
+  border: 1px solid rgba(25, 135, 84, .22);
+}
+.profilepill{
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.86);
+}
+
+/* =========================
+   FAQ details
+========================= */
+details{
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.75);
+  padding: 10px 12px;
+}
+details + details{ margin-top: 10px; }
+summary{
+  cursor: pointer;
+  font-weight: 800;
+  color: rgba(15,23,42,.92);
+}
+
+/* =========================
+   FOOTER
+========================= */
+.footer{
+  border-top: 1px solid var(--border);
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(10px);
+}
+.footer__inner{
+  padding: 16px 0;
+  display: grid;
+  gap: 6px;
+  color: rgba(15,23,42,.82);
+}
+.footer small{ color: rgba(15,23,42,.68); }
+
+/* =========================
+   KANBAN (PORTAL STYLE)
+   - ocupa mais largura
+   - scroll horizontal apenas no board
+========================= */
+.kanbanShell{
+  margin-top: 12px;
+  padding: 14px;
+}
+
+.kanbanBoardWrap{
+  margin-top: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 10px;
+}
+
+/* scrollbar discreta */
+.kanbanBoardWrap::-webkit-scrollbar{ height: 12px; }
+.kanbanBoardWrap::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.25);
+  border-radius: 999px;
+}
+.kanbanBoardWrap::-webkit-scrollbar-track{
+  background: rgba(15,23,42,.08);
+  border-radius: 999px;
+}
+
+.kanbanBoard{
+  display: flex;
+  gap: 14px;
+  min-width: max-content; /* garante “board” largo e scroll interno */
+  align-items: stretch;
+}
+
+/* colunas maiores, menos “vazio” lateral */
+.kanbanCol{
+  flex: 0 0 clamp(320px, 22vw, 420px);
+  display: flex;
+  flex-direction: column;
+
+  background: rgba(255,255,255,.70);
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(15,23,42,.06);
+
+  /* menos “vazio” e mais “portal” */
+  min-height: 420px;
+  max-height: calc(100vh - 320px);
+}
+
+.kanbanCol.is-dragover{
+  outline: 3px solid rgba(34,197,94,.35);
+  outline-offset: -2px;
+}
+
+.kanbanColHeader{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid rgba(15,23,42,.10);
+  background: rgba(255,255,255,.65);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+}
+
+.kanbanColTitle{
+  font-weight: 900;
+  color: rgba(15,23,42,.92);
+  font-size: 15px;
+}
+
+.kanbanColCount{
+  min-width: 34px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(255,255,255,.82);
+  color: rgba(15,23,42,.80);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.kanbanColBody{
+  min-height: 0;
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.kanbanEmpty{
+  border: 1px dashed rgba(15,23,42,.18);
+  background: rgba(255,255,255,.55);
+  color: rgba(15,23,42,.68);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.kanbanCard{
+  background: var(--card-solid);
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 14px;
+  box-shadow: 0 10px 18px rgba(15,23,42,.06);
+  padding: 12px;
+}
+
+.kanbanCardHandle{
+  font-weight: 900;
+  cursor: grab;
+  user-select: none;
+  color: rgba(15,23,42,.92);
+  margin-bottom: 6px;
+}
+
+.kanbanCardMeta{
+  color: rgba(15,23,42,.72);
+  font-size: 14px;
+}
+
+.kanbanCardActions{
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.areaCard__actions{
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
