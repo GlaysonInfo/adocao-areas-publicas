@@ -1,4 +1,3 @@
-// src/storage/proposals.ts
 import type {
   KanbanColuna,
   PropostaAdocao,
@@ -13,7 +12,7 @@ const KEY = "mvp_proposals_v1";
 
 /* =========================
    SUBSCRIBE
-   ========================= */
+========================= */
 type Unsub = () => void;
 const listeners = new Set<() => void>();
 
@@ -41,7 +40,7 @@ export function subscribeProposals(fn: () => void): Unsub {
 
 /* =========================
    UTILS
-   ========================= */
+========================= */
 function nowIso() {
   return new Date().toISOString();
 }
@@ -169,14 +168,17 @@ export function getProposalById(id: string): PropostaAdocao | null {
   return all.find((p) => p.id === id) ?? null;
 }
 
-export function listMyProposals(owner_role: string): PropostaAdocao[] {
+// ✅ FIX: aceita undefined/null (pra UI não estourar tipagem)
+export function listMyProposals(owner_role: string | null | undefined): PropostaAdocao[] {
+  const role = String(owner_role ?? "").trim();
+  if (!role) return [];
   const all = listProposals();
-  return all.filter((p) => p.owner_role === owner_role);
+  return all.filter((p) => p.owner_role === role);
 }
 
 /* =========================
    RULES
-   ========================= */
+========================= */
 function isClosed(p: PropostaAdocao) {
   return (
     p.closed_status === "approved" ||
@@ -217,7 +219,7 @@ function pushEvent(
 
 /* =========================
    DOCUMENT HELPERS (MVP = só metadados)
-   ========================= */
+========================= */
 function fileMeta(tipo: DocumentoTipo, list: FileList): DocumentoMeta {
   const f = list.item(0)!;
   return {
@@ -244,7 +246,7 @@ function upsertDoc(docs: DocumentoMeta[], next: DocumentoMeta): DocumentoMeta[] 
    - bloqueia concorrência por área
    - status da área: disponivel -> em_adocao
    - registra evento create
-   ========================= */
+========================= */
 export function createProposal(input: PropostaAdocao, actor_role: string) {
   const area = getAreaById(input.area_id);
   if (!area) throw new Error("Área inválida.");
@@ -255,6 +257,8 @@ export function createProposal(input: PropostaAdocao, actor_role: string) {
   const created = input.created_at ?? nowIso();
   const updated = input.updated_at ?? created;
 
+  // ✅ FIX: evita criar 2 eventos "create".
+  // Passa history com create explícito e NÃO adiciona create depois.
   const base = normalizeProposal({
     ...input,
     kanban_coluna: "protocolo",
@@ -262,43 +266,29 @@ export function createProposal(input: PropostaAdocao, actor_role: string) {
     closed_at: null,
     created_at: created,
     updated_at: updated,
-    history: [],
+    history: [
+      {
+        id: safeUuid(),
+        type: "create",
+        at: created,
+        actor_role: actor_role || input.owner_role,
+      },
+    ],
   });
 
-  let p = base;
-
-  // evento create (mesmo timestamp do created_at)
-  p = pushEvent(
-    p,
-    {
-      type: "create",
-      at: p.created_at,
-      actor_role: actor_role || p.owner_role,
-    },
-    p.updated_at
-  );
-
   const all = listProposals();
-  all.unshift(p);
+  all.unshift(base);
   writeAll(all);
 
   // regra de negócio: ao protocolar, a área entra em adoção
-  setAreaStatus(p.area_id, "em_adocao");
+  setAreaStatus(base.area_id, "em_adocao");
 
-  return p;
+  return base;
 }
 
 /* =========================
    MOVE / REQUEST_ADJUSTMENTS
-   - registra:
-     - move (sempre)
-     - request_adjustments (quando to === "ajustes", com note obrigatório)
-     - decision (quando termina)
-   - atualiza status da área:
-     protocolo -> em_adocao (já no create)
-     termo_assinado -> adotada
-     indeferida -> disponivel
-   ========================= */
+========================= */
 export function moveProposal(id: string, to: KanbanColuna, actor_role: string, note?: string) {
   const all = listProposals();
   const idx = all.findIndex((p) => p.id === id);
@@ -311,17 +301,19 @@ export function moveProposal(id: string, to: KanbanColuna, actor_role: string, n
     throw new Error("Proposta encerrada. Não é possível mover.");
   }
 
-  // ajustes exige motivo
   if (to === "ajustes") {
-    const t = String(note ?? "").trim();
-    if (!t) throw new Error("Motivo de ajustes é obrigatório.");
+    const t0 = String(note ?? "").trim();
+    if (!t0) throw new Error("Motivo de ajustes é obrigatório.");
   }
 
   const t = nowIso();
-
   let next: PropostaAdocao = { ...current, kanban_coluna: to, updated_at: t };
 
-  // move sempre
+  if (to === "indeferida") {
+  const tnote = String(note ?? "").trim();
+  if (!tnote) throw new Error("Motivo do indeferimento é obrigatório.");
+  }
+
   next = pushEvent(
     next,
     {
@@ -334,7 +326,6 @@ export function moveProposal(id: string, to: KanbanColuna, actor_role: string, n
     t
   );
 
-  // request_adjustments quando aplicável
   if (to === "ajustes") {
     next = pushEvent(
       next,
@@ -350,7 +341,6 @@ export function moveProposal(id: string, to: KanbanColuna, actor_role: string, n
     );
   }
 
-  // terminais
   if (to === "termo_assinado") {
     next = { ...next, closed_status: "approved", closed_at: t };
     next = pushEvent(
@@ -383,7 +373,6 @@ export function moveProposal(id: string, to: KanbanColuna, actor_role: string, n
   all[idx] = next;
   writeAll(all);
 
-  // atualiza status da área (após persistir)
   if (to === "termo_assinado") setAreaStatus(next.area_id, "adotada");
   if (to === "indeferida") setAreaStatus(next.area_id, "disponivel");
 
@@ -391,12 +380,8 @@ export function moveProposal(id: string, to: KanbanColuna, actor_role: string, n
 }
 
 /* =========================
-   ADOTANTE: ATENDER AJUSTES (EDITAR E/OU SUBSTITUIR DOCS) E REENVIAR
-   - A proposta precisa estar em "ajustes"
-   - Ao reenviar, VOLTA PARA "protocolo" (como você definiu)
-   - Mantém o mesmo codigo_protocolo
-   - Registra evento move (ajustes -> protocolo)
-   ========================= */
+   ADOTANTE: ATENDER AJUSTES E REENVIAR
+========================= */
 export function adopterUpdateAndResubmitFromAdjustments(
   id: string,
   input: {
@@ -418,7 +403,6 @@ export function adopterUpdateAndResubmitFromAdjustments(
   if (current.kanban_coluna !== "ajustes") throw new Error("A proposta não está em ajustes.");
   if (isClosed(current)) throw new Error("Proposta encerrada.");
 
-  // (MVP) trava por owner_role
   if (current.owner_role && current.owner_role !== role) {
     throw new Error("Você não é o responsável por esta proposta.");
   }
@@ -444,7 +428,7 @@ export function adopterUpdateAndResubmitFromAdjustments(
     ...current,
     descricao_plano: descricao,
     documentos: docs,
-    kanban_coluna: "protocolo", // <- regra: voltou para protocolo
+    kanban_coluna: "protocolo",
     updated_at: t,
   };
 
@@ -464,22 +448,16 @@ export function adopterUpdateAndResubmitFromAdjustments(
   all[idx] = next;
   writeAll(all);
 
-  // área continua em adoção (não mexe)
-
   return next;
 }
 
-/**
- * Compat: se sua UI já chama resubmitAfterAdjustments(id, role)
- * agora ela volta para "protocolo" (não mais analise_semad).
- */
 export function resubmitAfterAdjustments(id: string, actor_role: string) {
   return adopterUpdateAndResubmitFromAdjustments(id, {}, actor_role);
 }
 
 /* =========================
    EVENTOS (BASE PARA RELATÓRIOS/SLA)
-   ========================= */
+========================= */
 type EventRow = ProposalEvent & {
   proposal_id: string;
   codigo_protocolo: string;
@@ -532,7 +510,9 @@ function listEventRowsBetween(fromIso: string, toIso: string): EventRow[] {
 }
 
 /**
- * Consolidado por período baseado em EVENTOS (não estado atual)
+ * Consolidado por período baseado em EVENTOS
+ * ✅ FIX: evita dobrar contagem (decision + move terminal).
+ * Usa decision como canônico e faz fallback para move apenas se não houver decision.
  */
 export function computeConsolidatedByPeriod(fromIso: string, toIso: string) {
   const evs = listEventRowsBetween(fromIso, toIso);
@@ -545,13 +525,14 @@ export function computeConsolidatedByPeriod(fromIso: string, toIso: string) {
 
   const adjustments_requested = evs.filter((e) => e.type === "request_adjustments").length;
 
-  const terms_signed =
-    evs.filter((e) => e.type === "decision" && e.decision === "approved").length +
-    evs.filter((e) => e.type === "move" && e.to === "termo_assinado").length;
+  const approved_decisions = evs.filter((e) => e.type === "decision" && e.decision === "approved").length;
+  const rejected_decisions = evs.filter((e) => e.type === "decision" && e.decision === "rejected").length;
 
-  const rejected =
-    evs.filter((e) => e.type === "decision" && e.decision === "rejected").length +
-    evs.filter((e) => e.type === "move" && e.to === "indeferida").length;
+  const approved_moves = evs.filter((e) => e.type === "move" && e.to === "termo_assinado").length;
+  const rejected_moves = evs.filter((e) => e.type === "move" && e.to === "indeferida").length;
+
+  const terms_signed = approved_decisions > 0 ? approved_decisions : approved_moves;
+  const rejected = rejected_decisions > 0 ? rejected_decisions : rejected_moves;
 
   return {
     protocols_created,
@@ -565,19 +546,13 @@ export function computeConsolidatedByPeriod(fromIso: string, toIso: string) {
 }
 
 /**
- * Produtividade SEMAD por EVENTOS (ator = gestor_semad)
- * - total_moves = moves feitos pela SEMAD no período
- * - total_adjustments_requested = requests de ajustes feitos pela SEMAD no período
- * - proposals_touched = propostas com >=1 evento SEMAD no período
- * - transitions = contagem de transições SEMAD (from->to)
+ * Produtividade SEMAD por EVENTOS
  */
 export function computeSemadProductivity(fromIso: string, toIso: string) {
   const evs = listEventRowsBetween(fromIso, toIso);
 
   const semadMoves = evs.filter((e) => e.actor_role === "gestor_semad" && e.type === "move");
-  const semadAdjust = evs.filter(
-    (e) => e.actor_role === "gestor_semad" && e.type === "request_adjustments"
-  );
+  const semadAdjust = evs.filter((e) => e.actor_role === "gestor_semad" && e.type === "request_adjustments");
 
   const touched = new Set<string>();
   for (const e of [...semadMoves, ...semadAdjust]) touched.add(e.proposal_id);
@@ -602,7 +577,6 @@ export function computeSemadProductivity(fromIso: string, toIso: string) {
 
 /**
  * SLA por coluna: tempo de permanência (entrada->saída), com censura em toIso.
- * IMPORTANTE: reconstrói a coluna vigente no início do período (não assume "protocolo").
  */
 export function computeSlaByColumn(fromIso: string, toIso: string) {
   const startMs = toMs(fromIso);
@@ -629,12 +603,10 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
   for (const p of proposals) {
     const hist = [...(p.history ?? [])].sort((a, b) => String(a.at).localeCompare(String(b.at)));
 
-    // 1) coluna inicial em created_at
     let curCol: KanbanColuna = "protocolo";
     let curAt = toMs(p.created_at);
     if (!Number.isFinite(curAt)) curAt = startMs;
 
-    // 2) “rebobina” até o startMs para descobrir a coluna vigente no início do período
     for (const e of hist) {
       const t = toMs(e.at);
       if (!Number.isFinite(t)) continue;
@@ -646,10 +618,8 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
       }
     }
 
-    // início efetivo de contagem
     curAt = Math.max(curAt, startMs);
 
-    // 3) processa moves dentro do período
     for (const e of hist) {
       const t = toMs(e.at);
       if (!Number.isFinite(t)) continue;
@@ -667,7 +637,6 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
       }
     }
 
-    // 4) censura no fim do período
     const segStart = Math.max(curAt, startMs);
     const segEnd = endMs;
     if (segEnd > segStart) bucket[curCol].push(segEnd - segStart);
@@ -680,10 +649,7 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
     return sorted[idx];
   };
 
-  const by_column: Record<
-    string,
-    { n: number; p50_ms: number | null; p80_ms: number | null; p95_ms: number | null }
-  > = {};
+  const by_column: Record<string, { n: number; p50_ms: number | null; p80_ms: number | null; p95_ms: number | null }> = {};
 
   let samples = 0;
   for (const c of cols) {

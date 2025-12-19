@@ -19,15 +19,32 @@ export function MyProposalsPage() {
             <h1 className="page__title">Minhas Propostas</h1>
             <p className="page__subtitle">Acompanhe o andamento das suas propostas.</p>
           </div>
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link className="btn btn--primary" to="/propostas/nova">
+              Nova proposta (área cadastrada)
+            </Link>
+            <Link className="btn btn--subtle" to="/solicitacoes-area/nova">
+              Nova solicitação (área não cadastrada)
+            </Link>
+            <Link className="btn" to="/minhas-solicitacoes-area">
+              Minhas solicitações
+            </Link>
+          </div>
         </header>
 
         {items.length === 0 ? (
           <div className="card pad">
             <h3 style={{ marginTop: 0 }}>Nenhuma proposta encontrada</h3>
-            <p>Crie uma nova proposta a partir de uma área disponível.</p>
-            <Link className="btn btn--primary" to="/propostas/nova">
-              Nova proposta
-            </Link>
+            <p>Crie uma nova proposta a partir de uma área disponível ou protocole uma solicitação quando a área não estiver cadastrada.</p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Link className="btn btn--primary" to="/propostas/nova">
+                Nova proposta
+              </Link>
+              <Link className="btn btn--subtle" to="/solicitacoes-area/nova">
+                Nova solicitação
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="list">

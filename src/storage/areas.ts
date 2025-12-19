@@ -1,4 +1,3 @@
-// src/storage/areas.ts
 import type { AreaPublica, AreaStatus, AreaArquivoMeta } from "../domain/area";
 import { mock_areas } from "../mock/areas";
 
@@ -49,7 +48,7 @@ function normalizeStatus(raw: string): AreaStatus | null {
     .replace(/-/g, "_");
 
   if (s === "disponivel" || s === "disponivel_para_adocao") return "disponivel";
-  if (s === "em_adocao" || s === "em_adocao") return "em_adocao";
+  if (s === "em_adocao") return "em_adocao";
   if (s === "adotada" || s === "adotado") return "adotada";
   return null;
 }
@@ -146,7 +145,6 @@ function writeAll(items: AreaPublica[]) {
 
 function ensureSeeded() {
   if (localStorage.getItem(DISABLE_SEED)) return; // <- não semeia em modo teste CSV
-
   if (localStorage.getItem(SEEDED)) return;
 
   const existing = readAllRaw();
@@ -316,7 +314,8 @@ export function importAreasFromCSV(csvText: string): ImportReport {
 
   const need = ["codigo", "nome", "tipo", "bairro", "logradouro", "metragem_m2", "status"];
   for (const h of need) {
-    if (!headers.includes(h)) report.errors.push({ row: 0, message: `Cabeçalho obrigatório ausente: "${h}".` });
+    if (!headers.includes(h))
+      report.errors.push({ row: 0, message: `Cabeçalho obrigatório ausente: "${h}".` });
   }
   if (report.errors.length > 0) return report;
 

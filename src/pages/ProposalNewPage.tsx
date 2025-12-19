@@ -10,6 +10,9 @@ import { listAreasPublic, subscribeAreas } from "../storage/areas";
 import { createProposal } from "../storage/proposals";
 import { useAuth } from "../auth/AuthContext";
 
+// ✅ FIX: se protocol.ts exporta next_protocol, isso elimina o erro do Vite
+import { next_protocol as nextProtocol } from "../storage/protocol";
+
 const doc_types: { tipo: DocumentoTipo; label: string }[] = [
   { tipo: "carta_intencao", label: "Carta de Intenção (obrigatório)" },
   { tipo: "projeto_resumo", label: "Projeto Resumo (obrigatório)" },
@@ -17,20 +20,6 @@ const doc_types: { tipo: DocumentoTipo; label: string }[] = [
 
 function nowIso() {
   return new Date().toISOString();
-}
-
-function getYear() {
-  return new Date().getFullYear();
-}
-
-function nextProtocol(): string {
-  const year = getYear();
-  const key = `mvp_protocolo_seq_${year}`;
-  const current = Number(localStorage.getItem(key) ?? "0");
-  const next = current + 1;
-  localStorage.setItem(key, String(next));
-  const seq = String(next).padStart(4, "0");
-  return `BETIM-${year}-${seq}`;
 }
 
 function safeUuid(): string {
@@ -68,7 +57,14 @@ export function ProposalNewPage() {
     return areas_disponiveis.find((a) => a.id === pre_area_id) ?? null;
   }, [pre_area_id, areas_disponiveis]);
 
-  const { register, handleSubmit, formState: { errors }, watch, setValue, trigger } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+    trigger,
+  } = useForm<FormValues>({
     resolver: zodResolver(form_schema),
     defaultValues: { area_id: preselectedArea?.id ?? "", descricao_plano: "" },
     mode: "onTouched",
@@ -153,7 +149,7 @@ export function ProposalNewPage() {
                 <div>
                   <label>
                     Área disponível:&nbsp;
-                    <select {...register("area_id")}>
+                    <select className="input" {...register("area_id")}>
                       <option value="">Selecione</option>
                       {areas_disponiveis.map((a) => (
                         <option key={a.id} value={a.id}>
@@ -162,7 +158,7 @@ export function ProposalNewPage() {
                       ))}
                     </select>
                   </label>
-                  {errors.area_id ? <div style={{ color: "crimson" }}>{errors.area_id.message}</div> : null}
+                  {errors.area_id ? <div className="err">{errors.area_id.message}</div> : null}
                 </div>
 
                 {areaSelecionada ? (
@@ -184,13 +180,13 @@ export function ProposalNewPage() {
                   <label>
                     Descrição do plano (mín. 30 caracteres):
                     <br />
-                    <textarea {...register("descricao_plano")} rows={5} style={{ width: "100%" }} />
+                    <textarea className="input" {...register("descricao_plano")} rows={5} />
                   </label>
-                  {errors.descricao_plano ? <div style={{ color: "crimson" }}>{errors.descricao_plano.message}</div> : null}
+                  {errors.descricao_plano ? <div className="err">{errors.descricao_plano.message}</div> : null}
                 </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" onClick={nextFromStep1}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn btn--primary" type="button" onClick={nextFromStep1}>
                     Próximo
                   </button>
                 </div>
@@ -209,7 +205,7 @@ export function ProposalNewPage() {
                     <br />
                     <input type="file" {...register("carta_intencao")} />
                   </label>
-                  {errors.carta_intencao ? <div style={{ color: "crimson" }}>{errors.carta_intencao.message as string}</div> : null}
+                  {errors.carta_intencao ? <div className="err">{errors.carta_intencao.message as string}</div> : null}
                 </div>
 
                 <div>
@@ -218,14 +214,14 @@ export function ProposalNewPage() {
                     <br />
                     <input type="file" {...register("projeto_resumo")} />
                   </label>
-                  {errors.projeto_resumo ? <div style={{ color: "crimson" }}>{errors.projeto_resumo.message as string}</div> : null}
+                  {errors.projeto_resumo ? <div className="err">{errors.projeto_resumo.message as string}</div> : null}
                 </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" onClick={() => setStep(1)}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn" type="button" onClick={() => setStep(1)}>
                     Voltar
                   </button>
-                  <button type="button" onClick={nextFromStep2}>
+                  <button className="btn btn--primary" type="button" onClick={nextFromStep2}>
                     Próximo
                   </button>
                 </div>
@@ -240,10 +236,12 @@ export function ProposalNewPage() {
                   <div>
                     <strong>Área:</strong> {areaSelecionada?.nome ?? "-"}
                   </div>
+
                   <div style={{ marginTop: 6 }}>
                     <strong>Plano:</strong>
                     <div style={{ whiteSpace: "pre-wrap" }}>{watch("descricao_plano")}</div>
                   </div>
+
                   <div style={{ marginTop: 6 }}>
                     <strong>Documentos:</strong>
                     <ul style={{ margin: "6px 0 0 18px" }}>
@@ -253,11 +251,13 @@ export function ProposalNewPage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" onClick={() => setStep(2)}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn" type="button" onClick={() => setStep(2)}>
                     Voltar
                   </button>
-                  <button type="submit">Enviar e gerar protocolo</button>
+                  <button className="btn btn--primary" type="submit">
+                    Enviar e gerar protocolo
+                  </button>
                 </div>
               </section>
             ) : null}

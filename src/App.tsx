@@ -4,8 +4,6 @@ import { isManagerRole, useAuth } from "./auth/AuthContext";
 import { DevToolbar } from "./components/DevToolbar";
 import { Banner } from "./components/Banner";
 
-// ... (mesmos imports)
-
 function navClass({ isActive }: { isActive: boolean }) {
   return isActive ? "active" : "";
 }
@@ -23,6 +21,9 @@ export default function App() {
 
   // ✅ Relatórios só para gestor_semad e administrador
   const can_reports = role === "gestor_semad" || is_admin;
+
+  // ✅ Solicitações de área: somente gestor_semad e admin (evita link inútil para outros gestores)
+  const can_area_requests = role === "gestor_semad" || is_admin;
 
   return (
     <div>
@@ -58,6 +59,15 @@ export default function App() {
                 <NavLink to="/minhas-propostas" className={navClass}>
                   Minhas Propostas
                 </NavLink>
+
+                {/* ✅ Novo fluxo: área não cadastrada */}
+                <NavLink to="/solicitacoes-area/nova" className={navClass}>
+                  Solicitar área
+                </NavLink>
+
+                <NavLink to="/minhas-solicitacoes-area" className={navClass}>
+                  Minhas solicitações
+                </NavLink>
               </>
             ) : null}
 
@@ -65,6 +75,13 @@ export default function App() {
             {is_manager || is_admin ? (
               <NavLink to="/gestor/kanban" className={navClass}>
                 Kanban Gestor
+              </NavLink>
+            ) : null}
+
+            {/* ✅ Solicitações de área (somente gestor_semad e admin) */}
+            {can_area_requests ? (
+              <NavLink to="/gestor/solicitacoes-area" className={navClass}>
+                Solicitações de área
               </NavLink>
             ) : null}
 

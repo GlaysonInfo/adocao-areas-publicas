@@ -1,0 +1,133 @@
+O que levar para o novo chat (contexto mínimo)
+
+No novo chat, cole apenas estes 3 blocos (copiar/colar):
+
+docs/AS_BUILT.md (seções: Mapa de Rotas, Regras de Negócio, Checklist de reprodução)
+
+docs/ARCHITECTURE.md (seções: Contratos localStorage + Invariantes)
+
+docs/CHANGELOG.md (seções: Estado atual + Próximos passos)
+
+Isso é suficiente para retomar sem depender do histórico do chat.
+
+Arquivos que foram criados/alterados nesta etapa (do que apareceu neste chat)
+
+Lista baseada no que você colou/confirmou aqui (pode haver outros no repo, mas estes são os “núcleo do fluxo”):
+
+App / Rotas
+
+src/App.tsx
+
+src/routes/AppRoutes.tsx
+
+Auth
+
+src/auth/AuthContext.tsx
+
+src/auth/RequireManager.tsx
+
+src/auth/RequireAdmin.tsx
+
+src/auth/RequireReports.tsx
+
+Domain
+
+src/domain/area.ts
+
+src/domain/proposal.ts
+
+src/domain/adopter.ts
+
+Storage
+
+src/storage/areas.ts
+
+src/storage/proposals.ts
+
+src/storage/adopters.ts
+
+Pages (público/adotante/gestor/admin/relatórios)
+
+src/pages/PublicProgramPage.tsx
+
+src/pages/LoginPage.tsx
+
+src/pages/AreasPage.tsx
+
+src/pages/ProposalNewPage.tsx
+
+src/pages/MyProposalsPage.tsx
+
+src/pages/MyProposalDetailPage.tsx
+
+src/pages/ManagerKanbanPage.tsx
+
+src/pages/ManagerProposalDetailPage.tsx
+
+src/pages/admin/AdminAreasPage.tsx
+
+src/pages/admin/AdminAreasImportPage.tsx
+
+src/pages/reports/ReportsPage.tsx
+
+src/pages/proposals/MyProposalEditPage.tsx
+
+Docs + Script de documentação
+
+scripts/as-built/generate_as_built.mjs
+
+docs/AS_BUILT.md
+
+docs/ARCHITECTURE.md
+
+docs/CHANGELOG.md
+
+package.json (script docs:asbuilt)
+
+Chaves/estado crítico (para não “perder o ponto”)
+
+Garanta que o snapshot inclua (sanitizado):
+
+mvp_role
+
+mvp_areas_v1 (+ seed flag se existir)
+
+mvp_proposals_v1
+
+mvp_protocolo_seq_${year}
+
+(se adotantes estiverem persistindo) chave do storage de adotantes (mvp_adopters_*)
+
+
+
+
+
+
+Arquivos-chave que estão no estado atual (para referência rápida)
+
+Rotas/layout: src/App.tsx, src/routes/AppRoutes.tsx
+
+Auth/guards: src/auth/AuthContext.tsx, RequireManager, RequireAdmin, RequireReports
+
+Domínio/storage: src/domain/area.ts, src/storage/areas.ts, src/domain/proposal.ts, src/storage/proposals.ts
+
+Páginas:
+src/pages/PublicProgramPage.tsx, src/pages/LoginPage.tsx, src/pages/AreasPage.tsx, src/pages/ProposalNewPage.tsx,
+src/pages/MyProposalsPage.tsx, src/pages/MyProposalDetailPage.tsx, src/pages/proposals/MyProposalEditPage.tsx,
+src/pages/ManagerKanbanPage.tsx, src/pages/ManagerProposalDetailPage.tsx,
+src/pages/admin/AdminAreasPage.tsx, src/pages/admin/AdminAreasImportPage.tsx,
+src/pages/reports/ReportsPage.tsx
+
+
+O “link do repo” é o link do repositório no GitHub (URL HTTPS) que aponta para o projeto:
+
+https://github.com/GlaysonInfo/adocao-areas-publicas
+
+Opcionalmente, você também pode usar o link Git (clone):
+
+HTTPS: https://github.com/GlaysonInfo/adocao-areas-publicas.git
+
+
+
+
+https://github.com/GlaysonInfo/adocao-areas-publicas.git
