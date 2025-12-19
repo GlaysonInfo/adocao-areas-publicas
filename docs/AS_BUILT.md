@@ -1,6 +1,6 @@
 # AS-BUILT (estado atual do sistema)
 
-> **Gerado em:** 2025-12-19T04:07:59.921Z
+> **Gerado em:** 2025-12-19T04:50:01.249Z
 
 ## Como rodar
 ```bash
@@ -76,20 +76,20 @@ npm run dev
 - Relatórios: contagens por período devem bater com eventos (create/move/request_adjustments/decision)
 
 ## Versão (git)
-- **Branch:** —
-- **Commit:** —
+- **Branch:** main
+- **Commit:** ab50c2a2719d85307fdeae997c1f296e1ea33f6f
 
 ### git status (porcelain)
 ```
-—
+?? "O que levar para o novo chat.txt"
 ```
 
 ### git diff --stat
 ```
-—
+
 ```
 
 ### git log -n 20 --oneline
 ```
-—
+ab50c2a docs: as-built snapshot
 ```

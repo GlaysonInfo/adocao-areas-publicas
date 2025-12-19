@@ -1,6 +1,6 @@
 # Changelog (as-built)
 
-> **Gerado em:** 2025-12-19T04:07:59.921Z
+> **Gerado em:** 2025-12-19T04:50:01.249Z
 
 ## Estado atual (o que funciona)
 - Portal com perfis: público, adotante (PF/PJ), gestores (SEMAD/ECOS/Governo), administrador.

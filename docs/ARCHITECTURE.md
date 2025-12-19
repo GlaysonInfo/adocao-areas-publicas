@@ -1,6 +1,6 @@
 # Architecture (as-built)
 
-> **Gerado em:** 2025-12-19T04:07:59.921Z
+> **Gerado em:** 2025-12-19T04:50:01.249Z
 
 ## Organização de pastas (esperada)
 - `src/domain/`: tipos e contratos de dados
