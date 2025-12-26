@@ -1,3 +1,4 @@
+// src/storage/proposals.ts
 import type {
   KanbanColuna,
   PropostaAdocao,
@@ -56,15 +57,18 @@ function toMs(iso: string) {
   return Number.isFinite(ms) ? ms : NaN;
 }
 
-function readAllRaw(): any[] {
-  const raw = localStorage.getItem(KEY);
-  if (!raw) return [];
+function tryParseJson(raw: string | null): unknown {
+  if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return JSON.parse(raw);
   } catch {
-    return [];
+    return null;
   }
+}
+
+function readAllRaw(): any[] {
+  const parsed = tryParseJson(localStorage.getItem(KEY));
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 function writeAll(items: PropostaAdocao[]) {
@@ -72,31 +76,35 @@ function writeAll(items: PropostaAdocao[]) {
   emit(); // dispara no mesmo tab
 }
 
+const ALLOWED_COLS: KanbanColuna[] = [
+  "protocolo",
+  "analise_semad",
+  "analise_ecos",
+  "ajustes",
+  "decisao",
+  "termo_assinado",
+  "indeferida",
+];
+
 function normalizeCol(raw: any): KanbanColuna {
   const s = String(raw ?? "").trim();
-  const allowed: KanbanColuna[] = [
-    "protocolo",
-    "analise_semad",
-    "analise_ecos",
-    "ajustes",
-    "decisao",
-    "termo_assinado",
-    "indeferida",
-  ];
-  return (allowed as string[]).includes(s) ? (s as KanbanColuna) : "protocolo";
+  return (ALLOWED_COLS as string[]).includes(s) ? (s as KanbanColuna) : "protocolo";
 }
 
-/** Normaliza evento, aceitando formatos antigos (historico/action/autor/etc.) */
-function normalizeEvent(raw: any): ProposalEvent | null {
+/** Normaliza evento aceitando formatos antigos (historico/action/autor/etc.)
+ *  Mantém campos extras (ex.: meta) quando existirem.
+ */
+function normalizeEvent(raw: any): (ProposalEvent & { meta?: any; gate_from?: any; gate_to?: any }) | null {
   if (!raw) return null;
 
+  // NOTE: aceita tipos novos mesmo que ProposalEventType não tenha literal.
   const type = String(raw.type ?? raw.action ?? raw.tipo ?? "").trim() as ProposalEventType;
   const at = String(raw.at ?? raw.quando ?? raw.timestamp ?? raw.created_at ?? "");
-  const actor_role = String(raw.actor_role ?? raw.actor ?? raw.autor ?? raw.profile ?? "unknown");
+  const actor_role = String(raw.actor_role ?? raw.actor ?? raw.autor ?? raw.profile ?? raw.role ?? "unknown");
 
   if (!type || !at) return null;
 
-  const ev: ProposalEvent = {
+  const ev: any = {
     id: String(raw.id ?? safeUuid()),
     type,
     at,
@@ -109,13 +117,20 @@ function normalizeEvent(raw: any): ProposalEvent | null {
   if (from != null) ev.from = normalizeCol(from);
   if (to != null) ev.to = normalizeCol(to);
 
-  const note = raw.note ?? raw.motivo ?? raw.mensagem;
+  const note = raw.note ?? raw.motivo ?? raw.mensagem ?? raw.decision_note;
   if (note != null && String(note).trim()) ev.note = String(note);
 
   if (raw.decision) ev.decision = raw.decision === "approved" ? "approved" : "rejected";
   if (raw.decision_note) ev.decision_note = String(raw.decision_note);
 
-  return ev;
+  // Mantém meta quando existir (ex.: meta.gate_from/gate_to)
+  if (raw.meta != null) ev.meta = raw.meta;
+
+  // compat: também aceita gate_from/gate_to em nível superior
+  if (raw.gate_from != null) ev.gate_from = raw.gate_from;
+  if (raw.gate_to != null) ev.gate_to = raw.gate_to;
+
+  return ev as ProposalEvent & { meta?: any; gate_from?: any; gate_to?: any };
 }
 
 function normalizeProposal(raw: any): PropostaAdocao {
@@ -126,9 +141,10 @@ function normalizeProposal(raw: any): PropostaAdocao {
   const historyRaw = Array.isArray(raw?.history)
     ? raw.history
     : Array.isArray(raw?.historico)
-    ? raw.historico
-    : [];
-  const history = historyRaw.map(normalizeEvent).filter(Boolean) as ProposalEvent[];
+      ? raw.historico
+      : [];
+
+  const history = historyRaw.map(normalizeEvent).filter(Boolean) as any[];
 
   // migração: se não tem history, cria um create mínimo (ajuda relatórios/SLA)
   if (history.length === 0) {
@@ -153,7 +169,7 @@ function normalizeProposal(raw: any): PropostaAdocao {
     owner_role: String(raw?.owner_role ?? "adotante_pf"),
     created_at,
     updated_at,
-    history,
+    history: history as ProposalEvent[],
     closed_status: raw?.closed_status ?? null,
     closed_at: raw?.closed_at ?? null,
   };
@@ -168,7 +184,7 @@ export function getProposalById(id: string): PropostaAdocao | null {
   return all.find((p) => p.id === id) ?? null;
 }
 
-// ✅ FIX: aceita undefined/null (pra UI não estourar tipagem)
+// aceita undefined/null (pra UI não estourar tipagem)
 export function listMyProposals(owner_role: string | null | undefined): PropostaAdocao[] {
   const role = String(owner_role ?? "").trim();
   if (!role) return [];
@@ -197,11 +213,7 @@ function hasOpenProposalForArea(area_id: string, ignoreProposalId?: string) {
   });
 }
 
-function pushEvent(
-  p: PropostaAdocao,
-  ev: Omit<ProposalEvent, "id">,
-  updatedAtIso: string
-): PropostaAdocao {
+function pushEvent<T extends Record<string, any>>(p: PropostaAdocao, ev: T, updatedAtIso: string): PropostaAdocao {
   const next: PropostaAdocao = {
     ...p,
     updated_at: updatedAtIso,
@@ -210,10 +222,10 @@ function pushEvent(
       {
         id: safeUuid(),
         ...ev,
-      },
+      } as any,
     ],
   };
-  next.history.sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  (next.history as any[]).sort((a, b) => String(a.at).localeCompare(String(b.at)));
   return next;
 }
 
@@ -243,22 +255,16 @@ function upsertDoc(docs: DocumentoMeta[], next: DocumentoMeta): DocumentoMeta[] 
 
 /* =========================
    CREATE
-   - bloqueia concorrência por área
-   - status da área: disponivel -> em_adocao
-   - registra evento create
 ========================= */
 export function createProposal(input: PropostaAdocao, actor_role: string) {
   const area = getAreaById(input.area_id);
   if (!area) throw new Error("Área inválida.");
   if (area.status !== "disponivel") throw new Error("Esta área não está disponível para adoção.");
-  if (hasOpenProposalForArea(input.area_id))
-    throw new Error("Já existe uma proposta em andamento para esta área.");
+  if (hasOpenProposalForArea(input.area_id)) throw new Error("Já existe uma proposta em andamento para esta área.");
 
   const created = input.created_at ?? nowIso();
   const updated = input.updated_at ?? created;
 
-  // ✅ FIX: evita criar 2 eventos "create".
-  // Passa history com create explícito e NÃO adiciona create depois.
   const base = normalizeProposal({
     ...input,
     kanban_coluna: "protocolo",
@@ -280,16 +286,83 @@ export function createProposal(input: PropostaAdocao, actor_role: string) {
   all.unshift(base);
   writeAll(all);
 
-  // regra de negócio: ao protocolar, a área entra em adoção
   setAreaStatus(base.area_id, "em_adocao");
-
   return base;
+}
+
+/* =========================
+   VISTORIA GATE (laudo_emitido)
+   - heurística: encontra em localStorage qualquer coleção com "vist"
+========================= */
+function hasLaudoEmitidoForProposal(proposalId: string): boolean {
+  const seedKeys = ["mvp_vistorias_v1", "mvp_vistorias"];
+  const keys = Array.from(
+    new Set([...seedKeys, ...Object.keys(localStorage).filter((k) => k.toLowerCase().includes("vist"))])
+  );
+
+  for (const k of keys) {
+    const raw = localStorage.getItem(k);
+    if (!raw) continue;
+
+    const parsed = tryParseJson(raw);
+    if (!Array.isArray(parsed)) continue;
+
+    for (const v of parsed) {
+      const pid = String((v as any)?.proposal_id ?? (v as any)?.proposta_id ?? "");
+      if (pid !== proposalId) continue;
+
+      const status = String((v as any)?.status ?? "");
+      if (status === "laudo_emitido") return true;
+
+      // fallback: se existir laudo estruturado
+      if ((v as any)?.laudo?.emitido_em) return true;
+    }
+  }
+
+  return false;
 }
 
 /* =========================
    MOVE / REQUEST_ADJUSTMENTS
 ========================= */
-export function moveProposal(id: string, to: KanbanColuna, actor_role: string, note?: string) {
+export type ProposalExtraEventInput = {
+  type: string; // ex.: "override_no_vistoria"
+  at?: string;
+  note?: string;
+  from?: KanbanColuna;
+  to?: KanbanColuna;
+  meta?: Record<string, any>; // ex.: { gate_from, gate_to }
+};
+
+function ensureMoveAfterExtras(moveIso: string, extras: ProposalExtraEventInput[]) {
+  const moveMs = toMs(moveIso);
+  const maxExtraMs = extras
+    .map((e) => toMs(String(e.at ?? "")))
+    .filter((n) => Number.isFinite(n))
+    .reduce((m, v) => Math.max(m, v), -Infinity);
+
+  if (!Number.isFinite(maxExtraMs)) return moveIso;
+  if (!Number.isFinite(moveMs) || moveMs <= maxExtraMs) return new Date(maxExtraMs + 1).toISOString();
+  return moveIso;
+}
+
+function hasOverrideForGate(p: PropostaAdocao, from: KanbanColuna, to: KanbanColuna) {
+  const hist: any[] = Array.isArray(p.history) ? p.history : [];
+  return hist.some((e) => {
+    if (String(e?.type) !== "override_no_vistoria") return false;
+    const gf = (e?.meta?.gate_from ?? e?.gate_from ?? e?.from) as any;
+    const gt = (e?.meta?.gate_to ?? e?.gate_to ?? e?.to) as any;
+    return String(gf) === String(from) && String(gt) === String(to);
+  });
+}
+
+export function moveProposal(
+  id: string,
+  to: KanbanColuna,
+  actor_role: string,
+  note?: string,
+  extraEvents?: ProposalExtraEventInput[]
+) {
   const all = listProposals();
   const idx = all.findIndex((p) => p.id === id);
   if (idx < 0) throw new Error("Proposta não encontrada.");
@@ -301,72 +374,132 @@ export function moveProposal(id: string, to: KanbanColuna, actor_role: string, n
     throw new Error("Proposta encerrada. Não é possível mover.");
   }
 
+  // validações básicas
   if (to === "ajustes") {
     const t0 = String(note ?? "").trim();
     if (!t0) throw new Error("Motivo de ajustes é obrigatório.");
   }
-
-  const t = nowIso();
-  let next: PropostaAdocao = { ...current, kanban_coluna: to, updated_at: t };
-
   if (to === "indeferida") {
-  const tnote = String(note ?? "").trim();
-  if (!tnote) throw new Error("Motivo do indeferimento é obrigatório.");
+    const t0 = String(note ?? "").trim();
+    if (!t0) throw new Error("Motivo do indeferimento é obrigatório.");
   }
 
+  // ===== ✅ GATE (AGORA NO PONTO CERTO):
+  // SEMAD -> ECOS (encaminhar p/ ECOS) sem laudo_emitido => exigir confirmação + motivo e logar override
+  const isGateTransition = from === "analise_semad" && to === "analise_ecos";
+  const needsGate = isGateTransition && !hasLaudoEmitidoForProposal(current.id);
+
+  const extra: ProposalExtraEventInput[] = Array.isArray(extraEvents) ? [...extraEvents] : [];
+  const hasOverrideInExtras = extra.some((e) => String(e?.type) === "override_no_vistoria");
+  const alreadyLoggedForThisGate = hasOverrideForGate(current, from, to);
+
+  if (needsGate && !hasOverrideInExtras && !alreadyLoggedForThisGate) {
+    const ok = window.confirm(
+      `Atenção: não há LAUDO DE VISTORIA emitido para esta proposta.\n\n` +
+        `Você está encaminhando da SEMAD para a ECOS.\n\n` +
+        `Deseja seguir mesmo assim (OVERRIDE SEM VISTORIA)?`
+    );
+    if (!ok) return current;
+
+    const motivo = (window.prompt("Motivo do override (obrigatório):", "") ?? "").trim();
+    if (!motivo) {
+      alert("Motivo obrigatório. Operação cancelada.");
+      return current;
+    }
+
+    // evento override ANTES do move
+    extra.unshift({
+      type: "override_no_vistoria",
+      at: nowIso(),
+      note: motivo,
+      from,
+      to,
+      meta: { gate_from: from, gate_to: to },
+    });
+  }
+
+  // timestamps (garante move depois dos extras)
+  let tMove = ensureMoveAfterExtras(nowIso(), extra);
+
+  let next: PropostaAdocao = { ...current, kanban_coluna: to, updated_at: tMove };
+
+  // 1) extras (ex.: override_no_vistoria) — ANTES do move
+  if (extra.length > 0) {
+    for (const ex of extra) {
+      const at = String(ex.at ?? nowIso());
+      next = pushEvent(
+        next,
+        {
+          type: ex.type as unknown as ProposalEventType,
+          at,
+          actor_role: actor_role || "unknown",
+          from: ex.from ?? from,
+          to: ex.to ?? to,
+          note: ex.note ? String(ex.note) : undefined,
+          ...(ex.meta ? { meta: ex.meta } : {}),
+        },
+        tMove
+      );
+    }
+  }
+
+  // 2) move
   next = pushEvent(
     next,
     {
       type: "move",
-      at: t,
+      at: tMove,
       actor_role: actor_role || "unknown",
       from,
       to,
+      note: note != null && String(note).trim() ? String(note).trim() : undefined,
     },
-    t
+    tMove
   );
 
+  // 3) request_adjustments
   if (to === "ajustes") {
     next = pushEvent(
       next,
       {
         type: "request_adjustments",
-        at: t,
+        at: tMove,
         actor_role: actor_role || "unknown",
         from,
         to,
         note: String(note).trim(),
       },
-      t
+      tMove
     );
   }
 
+  // 4) decisões terminais
   if (to === "termo_assinado") {
-    next = { ...next, closed_status: "approved", closed_at: t };
+    next = { ...next, closed_status: "approved", closed_at: tMove };
     next = pushEvent(
       next,
       {
         type: "decision",
-        at: t,
+        at: tMove,
         actor_role: actor_role || "unknown",
         decision: "approved",
       },
-      t
+      tMove
     );
   }
 
   if (to === "indeferida") {
-    next = { ...next, closed_status: "rejected", closed_at: t };
+    next = { ...next, closed_status: "rejected", closed_at: tMove };
     next = pushEvent(
       next,
       {
         type: "decision",
-        at: t,
+        at: tMove,
         actor_role: actor_role || "unknown",
         decision: "rejected",
         decision_note: note ? String(note) : undefined,
       },
-      t
+      tMove
     );
   }
 
@@ -470,9 +603,9 @@ function listEventRows(): EventRow[] {
   const rows: EventRow[] = [];
 
   for (const p of proposals) {
-    for (const ev of p.history ?? []) {
+    for (const ev of (p.history ?? []) as any[]) {
       rows.push({
-        ...ev,
+        ...(ev as any),
         proposal_id: p.id,
         codigo_protocolo: p.codigo_protocolo,
         area_id: p.area_id,
@@ -509,11 +642,6 @@ function listEventRowsBetween(fromIso: string, toIso: string): EventRow[] {
   });
 }
 
-/**
- * Consolidado por período baseado em EVENTOS
- * ✅ FIX: evita dobrar contagem (decision + move terminal).
- * Usa decision como canônico e faz fallback para move apenas se não houver decision.
- */
 export function computeConsolidatedByPeriod(fromIso: string, toIso: string) {
   const evs = listEventRowsBetween(fromIso, toIso);
 
@@ -525,14 +653,26 @@ export function computeConsolidatedByPeriod(fromIso: string, toIso: string) {
 
   const adjustments_requested = evs.filter((e) => e.type === "request_adjustments").length;
 
-  const approved_decisions = evs.filter((e) => e.type === "decision" && e.decision === "approved").length;
-  const rejected_decisions = evs.filter((e) => e.type === "decision" && e.decision === "rejected").length;
+  const byProposal = new Map<string, EventRow[]>();
+  for (const e of evs) {
+    const arr = byProposal.get(e.proposal_id) ?? [];
+    arr.push(e);
+    byProposal.set(e.proposal_id, arr);
+  }
 
-  const approved_moves = evs.filter((e) => e.type === "move" && e.to === "termo_assinado").length;
-  const rejected_moves = evs.filter((e) => e.type === "move" && e.to === "indeferida").length;
+  let terms_signed = 0;
+  let rejected = 0;
 
-  const terms_signed = approved_decisions > 0 ? approved_decisions : approved_moves;
-  const rejected = rejected_decisions > 0 ? rejected_decisions : rejected_moves;
+  for (const [, arr] of byProposal) {
+    const decApproved = arr.some((e) => e.type === "decision" && (e as any).decision === "approved");
+    const decRejected = arr.some((e) => e.type === "decision" && (e as any).decision === "rejected");
+
+    if (decApproved) terms_signed += 1;
+    else if (arr.some((e) => e.type === "move" && e.to === "termo_assinado")) terms_signed += 1;
+
+    if (decRejected) rejected += 1;
+    else if (arr.some((e) => e.type === "move" && e.to === "indeferida")) rejected += 1;
+  }
 
   return {
     protocols_created,
@@ -545,21 +685,21 @@ export function computeConsolidatedByPeriod(fromIso: string, toIso: string) {
   };
 }
 
-/**
- * Produtividade SEMAD por EVENTOS
- */
 export function computeSemadProductivity(fromIso: string, toIso: string) {
   const evs = listEventRowsBetween(fromIso, toIso);
 
   const semadMoves = evs.filter((e) => e.actor_role === "gestor_semad" && e.type === "move");
   const semadAdjust = evs.filter((e) => e.actor_role === "gestor_semad" && e.type === "request_adjustments");
+  const semadOverrides = evs.filter(
+    (e) => e.actor_role === "gestor_semad" && String(e.type) === "override_no_vistoria"
+  );
 
   const touched = new Set<string>();
-  for (const e of [...semadMoves, ...semadAdjust]) touched.add(e.proposal_id);
+  for (const e of [...semadMoves, ...semadAdjust, ...semadOverrides]) touched.add(e.proposal_id);
 
   const transCount = new Map<string, number>();
   for (const e of semadMoves) {
-    const k = `${e.from ?? "?"}→${e.to ?? "?"}`;
+    const k = `${(e as any).from ?? "?"}→${(e as any).to ?? "?"}`;
     transCount.set(k, (transCount.get(k) ?? 0) + 1);
   }
 
@@ -572,12 +712,10 @@ export function computeSemadProductivity(fromIso: string, toIso: string) {
     total_adjustments_requested: semadAdjust.length,
     proposals_touched: touched.size,
     transitions,
+    overrides_no_vistoria: semadOverrides.length,
   };
 }
 
-/**
- * SLA por coluna: tempo de permanência (entrada->saída), com censura em toIso.
- */
 export function computeSlaByColumn(fromIso: string, toIso: string) {
   const startMs = toMs(fromIso);
   const endMs = toMs(toIso);
@@ -585,15 +723,7 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
     return { by_column: {}, samples: 0 };
   }
 
-  const cols: KanbanColuna[] = [
-    "protocolo",
-    "analise_semad",
-    "analise_ecos",
-    "ajustes",
-    "decisao",
-    "termo_assinado",
-    "indeferida",
-  ];
+  const cols: KanbanColuna[] = [...ALLOWED_COLS];
 
   const bucket: Record<string, number[]> = {};
   for (const c of cols) bucket[c] = [];
@@ -611,9 +741,8 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
       const t = toMs(e.at);
       if (!Number.isFinite(t)) continue;
       if (t >= startMs) break;
-
-      if (e.type === "move" && e.to) {
-        curCol = e.to;
+      if (e.type === "move" && (e as any).to) {
+        curCol = normalizeCol((e as any).to);
         curAt = t;
       }
     }
@@ -626,13 +755,13 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
       if (t < startMs) continue;
       if (t > endMs) break;
 
-      if (e.type === "move" && e.to) {
+      if (e.type === "move" && (e as any).to) {
         const segStart = Math.max(curAt, startMs);
         const segEnd = Math.min(t, endMs);
 
         if (segEnd > segStart) bucket[curCol].push(segEnd - segStart);
 
-        curCol = e.to;
+        curCol = normalizeCol((e as any).to);
         curAt = t;
       }
     }
@@ -649,7 +778,8 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
     return sorted[idx];
   };
 
-  const by_column: Record<string, { n: number; p50_ms: number | null; p80_ms: number | null; p95_ms: number | null }> = {};
+  const by_column: Record<string, { n: number; p50_ms: number | null; p80_ms: number | null; p95_ms: number | null }> =
+    {};
 
   let samples = 0;
   for (const c of cols) {
