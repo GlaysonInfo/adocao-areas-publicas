@@ -1,95 +1,13 @@
-# AS-BUILT (estado atual do sistema)
+﻿# AS-BUILT (snapshot)
 
-> **Gerado em:** 2025-12-19T04:50:01.249Z
+- Data/hora: 2025-12-26 17:09:17
+- Branch: main
+- Commit: ff1ba42da55e5133f733bcff6925f9109e4a1966
+- Tag base: as-built-20251219-0126
+- Remote: https://github.com/GlaysonInfo/adocao-areas-publicas.git
 
-## Como rodar
-```bash
-npm install
-npm run dev
-```
+## Alterações desde as-built-20251219-0126
+A	O que levar para o novo chat.txt A	data/import/areas_betim_20_simuladas.csv M	docs/ARCHITECTURE.md M	docs/AS_BUILT.md M	docs/CHANGELOG.md M	docs/HANDOFF.md M	src/App.css M	src/App.tsx A	src/domain/area_request.ts M	src/domain/proposal.ts A	src/domain/vistoria.ts A	src/pages/AreaRequestNewPage.tsx M	src/pages/LoginPage.tsx A	src/pages/ManagerAreaRequestDetailPage.tsx A	src/pages/ManagerAreaRequestsPage.tsx M	src/pages/ManagerProposalDetailPage.tsx A	src/pages/ManagerVistoriaDetailPage.tsx A	src/pages/ManagerVistoriaNewPage.tsx A	src/pages/ManagerVistoriasPage.tsx A	src/pages/MyAreaRequestsPage.tsx M	src/pages/MyProposalDetailPage.tsx M	src/pages/MyProposalsPage.tsx M	src/pages/ProposalNewPage.tsx M	src/pages/reports/ReportsPage.tsx M	src/routes/AppRoutes.tsx A	src/storage/area_request_reports.ts A	src/storage/area_requests.ts M	src/storage/areas.ts M	src/storage/proposals.ts A	src/storage/protocol.ts A	src/storage/vistorias.ts M	src/styles.css
 
-## Mapa de rotas (extraído de src/routes/AppRoutes.tsx)
-- `*` → **div**
-- `/` → **PublicProgramPage**
-- `/admin/areas` → **AdminAreasPage**
-- `/admin/areas/importar` → **AdminAreasImportPage**
-- `/areas` → **AreasPage**
-- `/gestor/kanban` → **ManagerKanbanPage**
-- `/gestor/propostas/:id` → **ManagerProposalDetailPage**
-- `/login` → **LoginPage**
-- `/minhas-propostas` → **MyProposalsPage**
-- `/minhas-propostas/:id` → **MyProposalDetailPage**
-- `/minhas-propostas/:id/editar` → **MyProposalEditPage**
-- `/propostas/nova` → **ProposalNewPage**
-- `/relatorios` → **ReportsPage**
-
-## Inventário de telas (src/pages/**/*.tsx)
-- `src/pages/admin/AdminAreasImportPage.tsx` (**AdminAreasImportPage**)
-- `src/pages/admin/AdminAreasPage.tsx` (**AdminAreasPage**)
-- `src/pages/AreasPage.tsx` (**AreasPage**)
-- `src/pages/LoginPage.tsx` (**LoginPage**)
-- `src/pages/ManagerKanbanPage.tsx` (**ManagerKanbanPage**)
-- `src/pages/ManagerProposalDetailPage.tsx` (**ManagerProposalDetailPage**)
-- `src/pages/MyProposalDetailPage.tsx` (**MyProposalDetailPage**)
-- `src/pages/MyProposalsPage.tsx` (**MyProposalsPage**)
-- `src/pages/ProposalNewPage.tsx` (**ProposalNewPage**)
-- `src/pages/proposals/MyProposalEditPage.tsx` (**MyProposalEditPage**)
-- `src/pages/PublicProgramPage.tsx` (**PublicProgramPage**)
-- `src/pages/reports/ReportsPage.tsx` (**ReportsPage**)
-
-## Fluxo por perfil (resumo)
-- **Público (sem login):** Início, Áreas, Login
-- **Adotante (PF/PJ):** Nova Proposta, Minhas Propostas, Detalhe, Atender Ajustes (quando em AJUSTES)
-- **Gestores:** Kanban, Detalhe da Proposta (gestor), movimentações por órgão
-- **Admin:** CRUD Áreas, Importação CSV, (Relatórios se habilitado)
-- **Relatórios:** visível para **gestor_semad** e **administrador**
-
-## Regras de negócio implementadas (pontos críticos)
-- **Protocolo único:** `codigo_protocolo` é gerado na criação e **não muda** em reenvios.
-- **Ajustes com motivo obrigatório:** qualquer órgão ao mover para AJUSTES exige `note`.
-- **Reenvio após ajustes:** adotante pode editar plano/anexos e reenviar; o fluxo volta para análise conforme regra do storage.
-- **Concorrência por área:** **1 proposta aberta por área** (bloqueia concorrentes).
-- **Status da área (automático):**
-  - Proposta criada (Protocolo) → área **em_adocao**
-  - Termo assinado → área **adotada**
-  - Indeferida → área **disponivel**
-
-## Evidências (colar aqui)
-### Snapshot sanitizado do localStorage
-> Cole aqui o snapshot gerado pelo script do browser (ver seção “Snapshot sanitizado” em ARCHITECTURE.md).
-
-### Checklist de reprodução mínima
-1) Admin: importar áreas via CSV (ou “zerar áreas (teste CSV)” e importar)
-2) Adotante: criar proposta para uma área **disponível**
-3) Gestor SEMAD: mover Protocolo → Análise SEMAD
-4) Gestor: solicitar AJUSTES **com motivo**
-5) Adotante: abrir detalhe → “Atender ajustes” → substituir anexos/editar plano → reenviar
-6) Gestor: avançar no Kanban até Termo assinado ou Indeferida
-7) Relatórios: validar período e produtividade (SEMAD) com base em eventos
-
-### Checklist de validação (por tela)
-- Áreas: exibe áreas ativas; não permite iniciar proposta quando área não está disponível
-- Nova Proposta: lista todas as áreas **disponíveis** e ativas
-- Minhas Propostas: aparece imediatamente após criar (via subscribe)
-- Detalhe do Adotante: mostra motivo de AJUSTES no topo; botão “Atender ajustes” só quando aplicável e dono
-- Kanban: movimentações registram eventos; AJUSTES exige motivo
-- Relatórios: contagens por período devem bater com eventos (create/move/request_adjustments/decision)
-
-## Versão (git)
-- **Branch:** main
-- **Commit:** ab50c2a2719d85307fdeae997c1f296e1ea33f6f
-
-### git status (porcelain)
-```
-?? "O que levar para o novo chat.txt"
-```
-
-### git diff --stat
-```
-
-```
-
-### git log -n 20 --oneline
-```
-ab50c2a docs: as-built snapshot
-```
+## Árvore (resumo)
+.gitignore O que levar para o novo chat.txt README.md TesteImpot.csv data/import/areas_betim_20_simuladas.csv docs/ARCHITECTURE.md docs/AS_BUILT.md docs/CHANGELOG.md docs/HANDOFF.md docs/VALIDATION.md docs/_generated/localStorage_snapshot.json eslint.config.js index.html package-lock.json package.json public/banner.jpg public/vite.svg scripts/as-built/generate_as_built.mjs src/App.css src/App.tsx src/assets/react.svg src/auth/AuthContext.tsx src/auth/RequireAdmin.tsx src/auth/RequireManager.tsx src/auth/RequireReports.tsx src/components/Banner.tsx src/components/DevToolbar.tsx src/components/Footer.tsx src/domain/adopter.ts src/domain/area.ts src/domain/area_request.ts src/domain/event.ts src/domain/history.ts src/domain/kanban.ts src/domain/proposal.ts src/domain/vistoria.ts src/index.css src/main.tsx src/mock/areas.ts src/pages/AreaRequestNewPage.tsx src/pages/AreasPage.tsx src/pages/LoginPage.tsx src/pages/ManagerAreaRequestDetailPage.tsx src/pages/ManagerAreaRequestsPage.tsx src/pages/ManagerKanbanPage.tsx src/pages/ManagerProposalDetailPage.tsx src/pages/ManagerVistoriaDetailPage.tsx src/pages/ManagerVistoriaNewPage.tsx src/pages/ManagerVistoriasPage.tsx src/pages/MyAreaRequestsPage.tsx src/pages/MyProposalDetailPage.tsx src/pages/MyProposalsPage.tsx src/pages/ProposalNewPage.tsx src/pages/PublicProgramPage.tsx src/pages/admin/AdminAreasImportPage.tsx src/pages/admin/AdminAreasPage.tsx src/pages/proposals/MyProposalEditPage.tsx src/pages/reports/ReportsPage.tsx src/routes/AppRoutes.tsx src/storage/adopters.ts src/storage/area_request_reports.ts src/storage/area_requests.ts src/storage/areas.ts src/storage/audit.ts src/storage/events.ts src/storage/proposals.ts src/storage/protocol.ts src/storage/vistorias.ts src/styles.css src/utils/csv.ts tsconfig.app.json tsconfig.json tsconfig.node.json vite.config.ts
