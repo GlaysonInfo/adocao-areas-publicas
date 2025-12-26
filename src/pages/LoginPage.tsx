@@ -164,7 +164,7 @@ export function LoginPage() {
               <div className="card pad" style={{ marginTop: 14, background: "rgba(255,255,255,.72)" }}>
                 <h3 style={{ marginTop: 0 }}>Cadastro mínimo do adotante</h3>
 
-                <div className="grid cols-2">
+                <div className="grid cols-1">
                   <label style={{ fontWeight: 800 }}>
                     Nome / Razão social
                     <input

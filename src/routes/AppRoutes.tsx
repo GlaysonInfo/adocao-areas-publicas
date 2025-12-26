@@ -8,7 +8,7 @@ import { ProposalNewPage } from "../pages/ProposalNewPage";
 import { MyProposalsPage } from "../pages/MyProposalsPage";
 import { MyProposalDetailPage } from "../pages/MyProposalDetailPage";
 
-// ✅ ADOTANTE - ATENDER AJUSTES
+// ✅ NOVO (ADOTANTE - ATENDER AJUSTES)
 import { MyProposalEditPage } from "../pages/proposals/MyProposalEditPage";
 
 import { ManagerKanbanPage } from "../pages/ManagerKanbanPage";
@@ -23,11 +23,16 @@ import { AdminAreasImportPage } from "../pages/admin/AdminAreasImportPage";
 import { RequireReports } from "../auth/RequireReports";
 import { ReportsPage } from "../pages/reports/ReportsPage";
 
-// ✅ SOLICITAÇÃO DE ÁREA NÃO CADASTRADA
+// Solicitações de área (novo fluxo)
 import { AreaRequestNewPage } from "../pages/AreaRequestNewPage";
 import { MyAreaRequestsPage } from "../pages/MyAreaRequestsPage";
 import { ManagerAreaRequestsPage } from "../pages/ManagerAreaRequestsPage";
 import { ManagerAreaRequestDetailPage } from "../pages/ManagerAreaRequestDetailPage";
+
+// ✅ Vistorias (novo)
+import { ManagerVistoriasPage } from "../pages/ManagerVistoriasPage";
+import { ManagerVistoriaNewPage } from "../pages/ManagerVistoriaNewPage";
+import { ManagerVistoriaDetailPage } from "../pages/ManagerVistoriaDetailPage";
 
 export function AppRoutes() {
   return (
@@ -40,10 +45,13 @@ export function AppRoutes() {
       <Route path="/areas" element={<AreasPage />} />
       <Route path="/propostas/nova" element={<ProposalNewPage />} />
       <Route path="/minhas-propostas" element={<MyProposalsPage />} />
+
+      {/* ✅ NOVO: tela de edição para atender ajustes */}
       <Route path="/minhas-propostas/:id/editar" element={<MyProposalEditPage />} />
+
       <Route path="/minhas-propostas/:id" element={<MyProposalDetailPage />} />
 
-      {/* ADOTANTE - SOLICITAÇÃO DE ÁREA NÃO CADASTRADA */}
+      {/* Solicitações (adotante) */}
       <Route path="/solicitacoes-area/nova" element={<AreaRequestNewPage />} />
       <Route path="/minhas-solicitacoes-area" element={<MyAreaRequestsPage />} />
 
@@ -52,9 +60,14 @@ export function AppRoutes() {
         <Route path="/gestor/kanban" element={<ManagerKanbanPage />} />
         <Route path="/gestor/propostas/:id" element={<ManagerProposalDetailPage />} />
 
-        {/* ✅ agora dentro do mesmo guard do gestor */}
+        {/* Solicitações (gestor) */}
         <Route path="/gestor/solicitacoes-area" element={<ManagerAreaRequestsPage />} />
         <Route path="/gestor/solicitacoes-area/:id" element={<ManagerAreaRequestDetailPage />} />
+
+        {/* ✅ Vistorias (gestor) */}
+        <Route path="/gestor/vistorias" element={<ManagerVistoriasPage />} />
+        <Route path="/gestor/vistorias/nova" element={<ManagerVistoriaNewPage />} />
+        <Route path="/gestor/vistorias/:id" element={<ManagerVistoriaDetailPage />} />
       </Route>
 
       {/* ADMIN (PROTEGIDO) */}

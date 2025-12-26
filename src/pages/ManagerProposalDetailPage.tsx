@@ -5,6 +5,9 @@ import type { KanbanColuna } from "../domain/proposal";
 import { getProposalById, moveProposal, subscribeProposals } from "../storage/proposals";
 import { useAuth } from "../auth/AuthContext";
 
+// ✅ para verificar se existe laudo emitido na proposta
+import { listVistorias, subscribeVistorias } from "../storage/vistorias";
+
 type Action = { label: string; to: KanbanColuna };
 
 const STATUS_LABEL: Record<KanbanColuna, string> = {
@@ -14,6 +17,7 @@ const STATUS_LABEL: Record<KanbanColuna, string> = {
   ajustes: "Ajustes",
   decisao: "Decisão",
   termo_assinado: "Termo Assinado",
+  indeferida: "Indeferida",
 };
 
 function actionsFor(role: string | null, col: KanbanColuna): Action[] {
@@ -30,6 +34,7 @@ function actionsFor(role: string | null, col: KanbanColuna): Action[] {
     return [
       { label: "Encaminhar p/ ECOS", to: "analise_ecos" },
       { label: "Solicitar ajustes", to: "ajustes" },
+      { label: "Indeferir", to: "indeferida" },
     ];
   }
 
@@ -37,6 +42,7 @@ function actionsFor(role: string | null, col: KanbanColuna): Action[] {
     return [
       { label: "Encaminhar p/ decisão", to: "decisao" },
       { label: "Solicitar ajustes", to: "ajustes" },
+      { label: "Indeferir", to: "indeferida" },
     ];
   }
 
@@ -48,6 +54,7 @@ function actionsFor(role: string | null, col: KanbanColuna): Action[] {
     return [
       { label: "Aprovar (termo assinado)", to: "termo_assinado" },
       { label: "Solicitar ajustes", to: "ajustes" },
+      { label: "Indeferir", to: "indeferida" },
     ];
   }
 
@@ -77,42 +84,61 @@ function askAjustesNote(): string | null {
   return t;
 }
 
+function askIndeferimentoNote(): string | null {
+  const txt = window.prompt("Motivo do indeferimento (será exibido ao adotante):", "");
+  if (txt == null) return null;
+  const t = txt.trim();
+  if (!t) return null;
+  return t;
+}
+
+function askOverrideNoVistoriaReason(gateTo: KanbanColuna): string | null {
+  const ok = window.confirm(
+    `Atenção: não foi encontrado LAUDO DE VISTORIA emitido para esta proposta.\n\n` +
+      `Você está prestes a avançar para "${gateTo}".\n\n` +
+      `Deseja fazer OVERRIDE (seguir sem vistoria)?\n` +
+      `• Será registrado para governança/auditoria.\n` +
+      `• Motivo será obrigatório.`
+  );
+  if (!ok) return null;
+
+  const motivo = (window.prompt("Motivo do override (obrigatório):", "") ?? "").trim();
+  if (!motivo) return null;
+
+  return motivo;
+}
+
 export function ManagerProposalDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { role } = useAuth();
 
-  const [tick, setTick] = useState(0);
+  const [tickP, setTickP] = useState(0);
+  const [tickV, setTickV] = useState(0);
 
-  useEffect(() => subscribeProposals(() => setTick((t) => t + 1)), []);
+  useEffect(() => subscribeProposals(() => setTickP((t) => t + 1)), []);
+  useEffect(() => subscribeVistorias(() => setTickV((t) => t + 1)), []);
 
   const p = useMemo(() => {
     if (!id) return null;
     return getProposalById(id);
-  }, [id, tick]);
+  }, [id, tickP]);
 
-  const history = (p?.history ?? []) as any[];
+  const vistoriasDaProposta = useMemo(() => {
+    if (!p?.id) return [];
+    return listVistorias().filter((v: any) => String(v?.proposal_id ?? "") === p.id);
+  }, [p?.id, tickV]);
 
-  const lastAjustesNote = useMemo(() => {
-    if (!p) return undefined;
+  const hasLaudoEmitido = useMemo(() => {
+    return vistoriasDaProposta.some((v: any) => String(v?.status ?? "") === "laudo_emitido");
+  }, [vistoriasDaProposta]);
 
-    // 1) se existir campo direto
-    const direct = (p as any).ajustes_note;
-    if (direct && String(direct).trim()) return String(direct).trim();
-
-    // 2) senão, pega do histórico (último move para "ajustes" com note)
-    for (let i = history.length - 1; i >= 0; i--) {
-      const ev = history[i] as any;
-      const action = ev.action ?? ev.type; // tolera variações antigas
-      const to = ev.to;
-      const note = ev.note;
-      if ((action === "move" || action === "mover") && to === "ajustes" && note) {
-        const t = String(note).trim();
-        if (t) return t;
-      }
-    }
-    return undefined;
-  }, [p, history.length]);
+  const latestLaudo = useMemo(() => {
+    const laudos = vistoriasDaProposta
+      .filter((v: any) => String(v?.status ?? "") === "laudo_emitido")
+      .sort((a: any, b: any) => String(b?.updated_at ?? b?.created_at ?? "").localeCompare(String(a?.updated_at ?? a?.created_at ?? "")));
+    return laudos[0] ?? null;
+  }, [vistoriasDaProposta]);
 
   if (!p) {
     return (
@@ -129,6 +155,20 @@ export function ManagerProposalDetailPage() {
 
   const col = p.kanban_coluna as KanbanColuna;
   const acts = actionsFor(role, col);
+  const history = (p?.history ?? []) as any[];
+
+  const lastAjustesNote = useMemo(() => {
+    const hist = Array.isArray(p.history) ? [...p.history] : [];
+    const candidates = hist.filter((e: any) => {
+      if (e?.type === "request_adjustments") return true;
+      if (e?.type === "move" && e?.to === "ajustes" && e?.note) return true;
+      return false;
+    });
+
+    if (candidates.length === 0) return undefined;
+    candidates.sort((a: any, b: any) => String(a.at ?? "").localeCompare(String(b.at ?? "")));
+    return candidates[candidates.length - 1]?.note?.trim() ? candidates[candidates.length - 1].note : undefined;
+  }, [p.history]);
 
   const doMove = (to: KanbanColuna) => {
     if (!canMove(role, col, to)) {
@@ -137,16 +177,54 @@ export function ManagerProposalDetailPage() {
     }
 
     let note: string | undefined;
+    let extraEvents: any[] | undefined;
 
+    // ✅ motivo obrigatório (ajustes)
     if (to === "ajustes") {
       const txt = askAjustesNote();
-      if (!txt) return; // exige motivo
+      if (!txt) return;
       note = txt;
     }
 
-    moveProposal(p.id, to, role ?? "gestor", note);
-    setTick((t) => t + 1);
+    // ✅ motivo obrigatório (indeferida)
+    if (to === "indeferida") {
+      const txt = askIndeferimentoNote();
+      if (!txt) return;
+      note = txt;
+    }
+
+    // ✅ GATE: decisao/termo_assinado sem laudo → override + motivo obrigatório
+    const gateTargets: KanbanColuna[] = ["decisao", "termo_assinado"];
+    const isGateTarget = gateTargets.includes(to);
+
+    if (isGateTarget && !hasLaudoEmitido) {
+      const motivo = askOverrideNoVistoriaReason(to);
+      if (!motivo) {
+        alert("Override cancelado ou motivo não informado.");
+        return;
+      }
+
+      extraEvents = [
+        {
+          type: "override_no_vistoria",
+          at: new Date().toISOString(),
+          actor_role: role ?? "unknown",
+          note: motivo,
+          meta: { gate_from: col, gate_to: to },
+        },
+      ];
+    }
+
+    try {
+      // moveProposal(id, to, actor_role, note?, extraEvents?)
+      moveProposal(p.id, to, role ?? "unknown", note, extraEvents);
+      setTickP((t) => t + 1);
+    } catch (e: any) {
+      alert(e?.message ?? "Falha ao mover proposta.");
+    }
   };
+
+  const canScheduleVistoria = role === "gestor_semad" || role === "administrador";
 
   return (
     <div className="container">
@@ -155,23 +233,48 @@ export function ManagerProposalDetailPage() {
           <div className="page__titlewrap">
             <h1 className="page__title">Detalhe da Proposta (Gestor)</h1>
             <p className="page__subtitle">
-              Protocolo <strong>{p.codigo_protocolo}</strong> · Etapa:{" "}
-              <strong>{STATUS_LABEL[col] ?? col}</strong> · Perfil:{" "}
+              Protocolo <strong>{p.codigo_protocolo}</strong> · Etapa: <strong>{STATUS_LABEL[col] ?? col}</strong> · Perfil:{" "}
               <strong>{role ?? "—"}</strong>
             </p>
           </div>
 
-          <div className="page__actions">
-            <button type="button" className="btn btn--subtle" onClick={() => setTick((t) => t + 1)}>
+          <div className="page__actions" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" className="btn btn--subtle" onClick={() => setTickP((t) => t + 1)}>
               Atualizar
             </button>
+
+            <Link className="btn btn--subtle" to={`/gestor/vistorias?proposal_id=${encodeURIComponent(p.id)}`}>
+              Vistorias
+            </Link>
+
             <Link className="btn btn--primary" to="/gestor/kanban">
               Voltar ao Kanban
             </Link>
           </div>
         </header>
 
-        {/* IMPORTANTE: motivo de ajustes visível também para gestor */}
+        {/* ✅ INFO: evidência de vistoria / laudo */}
+        <section className="card pad" style={{ marginBottom: 12 }}>
+          <div className="grid cols-2">
+            <div>
+              <strong>Vistorias vinculadas:</strong> {vistoriasDaProposta.length}
+              <div className="muted" style={{ marginTop: 6 }}>
+                Laudo emitido: <strong>{hasLaudoEmitido ? "SIM" : "NÃO"}</strong>
+              </div>
+            </div>
+            <div>
+              {latestLaudo ? (
+                <div className="muted">
+                  Último laudo emitido em: <strong>{fmt(latestLaudo?.laudo?.emitido_em ?? latestLaudo?.updated_at ?? latestLaudo?.created_at)}</strong>
+                </div>
+              ) : (
+                <div className="muted">Nenhum laudo emitido ainda.</div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Motivo de ajustes visível também para o gestor */}
         {lastAjustesNote ? (
           <section className="card pad" style={{ borderLeft: "6px solid rgba(245,158,11,.7)" }}>
             <h3 style={{ marginTop: 0 }}>Motivo / orientações de ajustes</h3>
@@ -181,7 +284,14 @@ export function ManagerProposalDetailPage() {
 
         <section className="card pad" aria-label="Ações">
           <h3 style={{ marginTop: 0 }}>Ações</h3>
+
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {canScheduleVistoria ? (
+              <Link className="btn btn--subtle" to={`/gestor/vistorias/nova?proposal_id=${encodeURIComponent(p.id)}`}>
+                Agendar vistoria
+              </Link>
+            ) : null}
+
             {acts.length === 0 ? (
               <span className="muted">Sem ações disponíveis para esta etapa/perfil.</span>
             ) : (
@@ -192,10 +302,15 @@ export function ManagerProposalDetailPage() {
               ))
             )}
           </div>
+
+          <div className="muted" style={{ marginTop: 10 }}>
+            Observação: ao avançar para <code>decisao</code> ou <code>termo_assinado</code> sem laudo emitido, o sistema exigirá
+            confirmação + motivo e registrará <code>override_no_vistoria</code> no event-log.
+          </div>
         </section>
 
         <section className="card pad" aria-label="Resumo">
-          <div className="grid cols-2">
+          <div className="grid cols-1">
             <div>
               <div>
                 <strong>Área:</strong> {p.area_nome}
@@ -219,9 +334,7 @@ export function ManagerProposalDetailPage() {
         <section className="grid cols-2" aria-label="Conteúdo">
           <div className="card pad">
             <h3 style={{ marginTop: 0 }}>Plano</h3>
-            <div style={{ whiteSpace: "pre-wrap" }}>
-              {p.descricao_plano?.trim() ? p.descricao_plano : "—"}
-            </div>
+            <div style={{ whiteSpace: "pre-wrap" }}>{p.descricao_plano?.trim() ? p.descricao_plano : "—"}</div>
           </div>
 
           <div className="card pad">
@@ -230,7 +343,7 @@ export function ManagerProposalDetailPage() {
               <ul style={{ margin: "6px 0 0 18px" }}>
                 {p.documentos.map((d: any, i: number) => (
                   <li key={`${d.tipo}-${i}`}>
-                    <strong>{d.tipo}:</strong> {d.file_name} ({Math.round((d.file_size ?? 0) / 1024)} KB){" "}
+                    <strong>{d.tipo}:</strong> {d.file_name} ({Math.round((d.file_size ?? 0) / 1024)} KB)
                     <div className="muted">{d.mime_type || "—"}</div>
                   </li>
                 ))}
@@ -243,21 +356,30 @@ export function ManagerProposalDetailPage() {
 
         <section className="card pad" aria-label="Histórico">
           <h3 style={{ marginTop: 0 }}>Histórico</h3>
+
           {history.length ? (
             <ul style={{ margin: "6px 0 0 18px" }}>
-              {history.map((ev: any, i: number) => (
-                <li key={i}>
-                  <strong>{fmt(ev.at ?? ev.created_at ?? ev.ts)}</strong> —{" "}
-                  <strong>{ev.actor ?? ev.by ?? "—"}</strong> —{" "}
-                  {ev.action ?? ev.type ?? "evento"}
-                  {ev.from && ev.to ? ` (${ev.from} → ${ev.to})` : ""}
-                  {ev.note ? (
-                    <div style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
-                      <em>{String(ev.note)}</em>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
+              {history.map((ev: any, i: number) => {
+                const type = String(ev?.type ?? ev?.action ?? "evento");
+                const actor = String(ev?.actor_role ?? ev?.actor ?? ev?.by ?? "—");
+                const at = String(ev?.at ?? ev?.created_at ?? ev?.ts ?? "");
+
+                const from = ev?.from ?? ev?.meta?.gate_from ?? ev?.gate_from;
+                const to = ev?.to ?? ev?.meta?.gate_to ?? ev?.gate_to;
+
+                return (
+                  <li key={i}>
+                    <strong>{fmt(at)}</strong> — <strong>{actor}</strong> — {type}
+                    {from || to ? ` (${from ?? "—"} → ${to ?? "—"})` : ""}
+
+                    {ev?.note ? (
+                      <div style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
+                        <em>{String(ev.note)}</em>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <div className="muted">Sem eventos ainda.</div>

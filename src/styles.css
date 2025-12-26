@@ -465,3 +465,70 @@ summary{
   flex-wrap: wrap;
   align-items: center;
 }
+
+/* =========================
+   LISTAS / ITENS (Minhas Propostas)
+========================= */
+.list{
+  display: grid;
+  gap: 12px;
+}
+
+.proposalRow{
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.proposalRow__main{
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.proposalRow__actions{
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+/* evita “quebras” esquisitas e melhora leitura */
+.item__title{
+  margin: 0 0 6px;
+}
+.item__meta{
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+/* em telas pequenas, o botão cai pra baixo (nunca cobre texto) */
+@media (max-width: 680px){
+  .proposalRow{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .proposalRow__actions{
+    justify-content: flex-start;
+  }
+}
+
+/* =========================
+   CAMPOS (Wizard / forms)
+========================= */
+.input{
+  width: 100%;
+}
+
+.formWide{
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: none;
+}
+
+.fieldLabel{
+  font-weight: 800;
+  display: grid;
+  gap: 6px;
+}

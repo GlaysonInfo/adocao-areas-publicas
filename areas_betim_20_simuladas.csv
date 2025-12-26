@@ -1,0 +1,21 @@
+﻿codigo;nome;tipo;bairro;logradouro;metragem_m2;status;restricoes;ativo;latitude_centro;longitude_centro
+BETIM-AREA-0001;Praça da Matriz (São João Batista);Praça;Centro;Av. das Palmeiras;800;disponivel;Respeitar mobiliário urbano existente.;sim;-19,989128;-44,222350
+BETIM-AREA-0002;Parque Ecológico Municipal (Imbiruçu);Parque;Guarujá;Rua do Rosário;7500;disponivel;Sem restrições específicas no MVP.;sim;-19,995593;-44,222878
+BETIM-AREA-0003;Campo do Alterosas;Campo de futebol;Imbiruçu;Av. Governador Valadares;5000;disponivel;Respeitar mobiliário urbano existente.;sim;-19,954539;-44,186421
+BETIM-AREA-0004;Canteiro Central Av. Edméia Lazzarotti;Canteiro central;Citrolândia;Rua Tiradentes;3200;disponivel;Intervenções sujeitas a aprovação SEMAD.;sim;-19,948934;-44,228110
+BETIM-AREA-0005;Jardim Linear do Rio Betim;Jardim;Laranjeiras;Rua Marechal Deodoro;2500;disponivel;Intervenções sujeitas a aprovação SEMAD.;sim;-19,980828;-44,215581
+BETIM-AREA-0006;Área Verde do Horto;Área pública;Laranjeiras;Av. Belo Horizonte;400;disponivel;;sim;-19,974704;-44,206961
+BETIM-AREA-0007;Praça da Juventude (Petrolândia);Praça;Vianópolis;Av. das Palmeiras;250;disponivel;Sem restrições específicas no MVP.;sim;-19,965326;-44,170113
+BETIM-AREA-0008;Quadra Poliesportiva (Vianópolis);Quadra esportiva;Citrolândia;Rua do Rosário;5000;disponivel;Intervenções sujeitas a aprovação SEMAD.;sim;-19,947736;-44,191389
+BETIM-AREA-0009;Pista de Caminhada (Angola);Pista de caminhada;Nova Baden;Rua Jequitibá;7500;disponivel;Respeitar mobiliário urbano existente.;sim;-19,955226;-44,225751
+BETIM-AREA-0010;Praça do Encontro (Centro);Praça;Imbiruçu;Rua Pará;400;em_adocao;Visita técnica recomendada antes de execução.;sim;-19,945511;-44,205692
+BETIM-AREA-0011;Parque Linear (PTB);Parque;Angola;Rua Jequitibá;650;em_adocao;Intervenções devem preservar arborização existente.;sim;-19,976184;-44,188289
+BETIM-AREA-0012;Canteiro Central Av. Bandeirantes;Canteiro central;Guarujá;Rua do Rosário;7500;em_adocao;Necessário alinhamento com ECOS para paisagismo.;sim;-19,987232;-44,184752
+BETIM-AREA-0013;Jardim do Ipê (Laranjeiras);Jardim;Jardim Teresópolis;Rua Sapucaia;2500;em_adocao;Intervenções devem preservar arborização existente.;sim;-19,938129;-44,190100
+BETIM-AREA-0014;Área Pública — Rotatória da Marco Túlio;Área pública;PTB;Rua Tiradentes;1800;em_adocao;Visita técnica recomendada antes de execução.;sim;-19,983757;-44,226574
+BETIM-AREA-0015;Praça do Skate (Teresópolis);Praça;Vianópolis;Rua Ipê Amarelo;1200;em_adocao;Visita técnica recomendada antes de execução.;sim;-19,984841;-44,171925
+BETIM-AREA-0016;Campo Society (Capelinha);Campo de futebol;Santa Lúcia;Av. Belo Horizonte;800;adotada;Manutenção conforme termo firmado.;sim;-19,967546;-44,175419
+BETIM-AREA-0017;Praça das Crianças (Guarujá);Praça;Capelinha;Rua Sapucaia;650;adotada;Proibido uso exclusivo do espaço.;sim;-19,989122;-44,183801
+BETIM-AREA-0018;Área Verde — Lagoa (Citrolândia);Área pública;PTB;Av. das Palmeiras;7500;adotada;Proibido uso exclusivo do espaço.;sim;-19,943631;-44,204536
+BETIM-AREA-0019;Praça da Cultura (Nova Baden);Praça;Imbiruçu;Av. Edméia Matos Lazzarotti;5000;adotada;Proibido uso exclusivo do espaço.;sim;-19,992045;-44,225673
+BETIM-AREA-0020;Solicitação de adotante — Área a definir (Santa Lúcia);Solicitação de adotante;Alterosas;Av. Edméia Matos Lazzarotti;650;adotada;"Área criada a partir de manifestação; validar endereço e limites antes de publicar.";sim;-19,949975;-44,203170

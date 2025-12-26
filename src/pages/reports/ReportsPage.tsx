@@ -1,5 +1,5 @@
 // src/pages/reports/ReportsPage.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { KanbanColuna } from "../../domain/proposal";
 import {
   computeConsolidatedByPeriod,
@@ -8,6 +8,12 @@ import {
   subscribeProposals,
 } from "../../storage/proposals";
 import { useAuth } from "../../auth/AuthContext";
+
+// ✅ Solicitações de área
+import { listAreaRequests, subscribeAreaRequests } from "../../storage/area_requests";
+
+// ✅ Vistorias
+import { listVistorias, subscribeVistorias } from "../../storage/vistorias";
 
 type TabKey =
   | "consolidado"
@@ -40,26 +46,31 @@ function toDateInputValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+
 function parseDateStart(s: string | null) {
   if (!s) return null;
   const d = new Date(`${s}T00:00:00`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
 function parseDateEnd(s: string | null) {
   if (!s) return null;
   const d = new Date(`${s}T23:59:59`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
 function safeDate(iso?: string) {
   if (!iso) return null;
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
 function fmtBR(iso?: string) {
   const d = safeDate(iso);
   if (!d) return "—";
   return d.toLocaleString("pt-BR");
 }
+
 function inRange(atIso: string | undefined, fromD: Date | null, toD: Date | null) {
   const d = safeDate(atIso);
   if (!d) return false;
@@ -67,42 +78,20 @@ function inRange(atIso: string | undefined, fromD: Date | null, toD: Date | null
   if (toD && d > toD) return false;
   return true;
 }
-function toMs(iso?: string) {
-  const t = Date.parse(String(iso ?? ""));
-  return Number.isFinite(t) ? t : NaN;
+
+function formatDuration(ms: number | null | undefined) {
+  if (ms == null) return "—";
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const mins = Math.floor(s / 60);
+  const hrs = Math.floor(mins / 60);
+  const days = Math.floor(hrs / 24);
+  if (days > 0) return `${days}d ${hrs % 24}h`;
+  if (hrs > 0) return `${hrs}h ${mins % 60}m`;
+  if (mins > 0) return `${mins}m`;
+  return `${s}s`;
 }
 
-function normEventType(h: any) {
-  return String(h?.type ?? h?.action ?? h?.tipo ?? "").trim();
-}
-function normActor(h: any) {
-  return String(h?.actor_role ?? h?.actor ?? h?.autor ?? h?.role ?? "—").trim();
-}
-function normAt(h: any) {
-  return String(h?.at ?? h?.quando ?? h?.timestamp ?? h?.created_at ?? "");
-}
-function normFrom(h: any) {
-  return String(h?.from ?? h?.from_coluna ?? h?.fromColuna ?? "");
-}
-function normTo(h: any) {
-  return String(h?.to ?? h?.to_coluna ?? h?.toColuna ?? "");
-}
-function normNote(h: any) {
-  return String(h?.note ?? h?.motivo ?? h?.mensagem ?? h?.decision_note ?? "");
-}
-function normDecision(h: any) {
-  return String(h?.decision ?? h?.decisao ?? h?.resultado ?? h?.result ?? "").trim();
-}
-
-function getAdopterContact(p: any) {
-  const nome = p?.adotante?.nome ?? p?.adotante_nome ?? p?.adotanteName ?? "—";
-  const email = p?.adotante?.email ?? p?.adotante_email ?? p?.adotanteEmail ?? "—";
-  const cel = p?.adotante?.celular ?? p?.adotante_celular ?? p?.celular ?? "—";
-  const wpp = p?.adotante?.whatsapp ?? p?.adotante_whatsapp ?? p?.whatsapp ?? "—";
-  return { nome, email, cel, wpp };
-}
-
-function downloadCSV(filename: string, headers: string[], rows: (string | number | null)[][]) {
+function downloadCSV(filename: string, headers: string[], rows: (string | number)[][]) {
   const esc = (v: any) => {
     const s = String(v ?? "");
     if (/[",;\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
@@ -118,6 +107,45 @@ function downloadCSV(filename: string, headers: string[], rows: (string | number
   a.click();
 
   URL.revokeObjectURL(url);
+}
+
+// ----------------------
+// Helpers Kanban (proposals)
+// ----------------------
+function normEventType(h: any) {
+  return String(h?.type ?? h?.action ?? h?.tipo ?? "").trim();
+}
+function normActor(h: any) {
+  return String(h?.actor_role ?? h?.actor ?? h?.autor ?? h?.role ?? "—").trim();
+}
+function normAt(h: any) {
+  return String(h?.at ?? h?.quando ?? h?.timestamp ?? "");
+}
+function normTo(h: any) {
+  return String(h?.to ?? h?.to_coluna ?? h?.toColuna ?? "");
+}
+function normDecision(h: any) {
+  return String(h?.decision ?? h?.decisao ?? "").trim();
+}
+function normNote(h: any) {
+  return String(h?.note ?? h?.motivo ?? h?.mensagem ?? h?.decision_note ?? "");
+}
+
+function getAdopterContact(p: any) {
+  const nome = p?.adotante?.nome ?? p?.adotante_nome ?? p?.adotanteName ?? "—";
+  const email = p?.adotante?.email ?? p?.adotante_email ?? p?.adotanteEmail ?? "—";
+  const cel = p?.adotante?.celular ?? p?.adotante_celular ?? p?.celular ?? "—";
+  const wpp = p?.adotante?.whatsapp ?? p?.adotante_whatsapp ?? p?.whatsapp ?? "—";
+  return { nome, email, cel, wpp };
+}
+
+function firstCreateInPeriod(p: any, fromD: Date | null, toD: Date | null) {
+  const hist: any[] = (p?.history ?? p?.historico ?? []) as any[];
+  const created = hist
+    .filter((h) => normEventType(h) === "create" && inRange(normAt(h), fromD, toD))
+    .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
+  if (created.length === 0) return null;
+  return { at: normAt(created[0]), actor: normActor(created[0]) };
 }
 
 function lastAdjustmentsInPeriod(p: any, fromD: Date | null, toD: Date | null) {
@@ -138,15 +166,6 @@ function lastAdjustmentsInPeriod(p: any, fromD: Date | null, toD: Date | null) {
 
   const last = moves[moves.length - 1];
   return { actor: normActor(last), at: normAt(last), note: normNote(last) };
-}
-
-function firstCreateInPeriod(p: any, fromD: Date | null, toD: Date | null) {
-  const hist: any[] = (p?.history ?? p?.historico ?? []) as any[];
-  const created = hist
-    .filter((h) => normEventType(h) === "create" && inRange(normAt(h), fromD, toD))
-    .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
-  if (created.length === 0) return null;
-  return { at: normAt(created[0]), actor: normActor(created[0]) };
 }
 
 function lastOtherOrgEntryInPeriod(p: any, fromD: Date | null, toD: Date | null) {
@@ -171,9 +190,7 @@ function lastTermSignedInPeriod(p: any, fromD: Date | null, toD: Date | null) {
     .filter(
       (h) =>
         normEventType(h) === "decision" &&
-        (normDecision(h) === "approved" ||
-          normDecision(h) === "aprovada" ||
-          normDecision(h) === "aprovado") &&
+        (normDecision(h) === "approved" || normDecision(h) === "aprovada" || normDecision(h) === "aprovado") &&
         inRange(normAt(h), fromD, toD)
     )
     .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
@@ -190,23 +207,59 @@ function lastTermSignedInPeriod(p: any, fromD: Date | null, toD: Date | null) {
   return { at: normAt(last), actor: normActor(last) };
 }
 
-function formatDuration(ms: number | null | undefined) {
-  if (ms == null) return "—";
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const mins = Math.floor(s / 60);
-  const hrs = Math.floor(mins / 60);
-  const days = Math.floor(hrs / 24);
-  if (days > 0) return `${days}d ${hrs % 24}h`;
-  if (hrs > 0) return `${hrs}h ${mins % 60}m`;
-  if (mins > 0) return `${mins}m`;
-  return `${s}s`;
+// ----------------------
+// Overrides sem vistoria (event-log em proposals)
+// ----------------------
+type OverrideRow = {
+  proposal_id: string;
+  codigo_protocolo: string;
+  at: string;
+  actor_role: string;
+  gate_from: string;
+  gate_to: string;
+  note: string;
+};
+
+function extractOverrideRows(proposals: any[], fromD: Date | null, toD: Date | null): OverrideRow[] {
+  const rows: OverrideRow[] = [];
+
+  for (const p of proposals) {
+    const hist: any[] = (p?.history ?? p?.historico ?? []) as any[];
+    for (const ev of hist) {
+      if (normEventType(ev) !== "override_no_vistoria") continue;
+      const at = normAt(ev);
+      if (!inRange(at, fromD, toD)) continue;
+
+      // tolera:
+      // - meta.gate_from / meta.gate_to (recomendado)
+      // - gate_from / gate_to (alternativo)
+      // - from / to (fallback)
+      const gate_from =
+        String(ev?.meta?.gate_from ?? ev?.gate_from ?? ev?.from ?? "").trim() || "—";
+      const gate_to =
+        String(ev?.meta?.gate_to ?? ev?.gate_to ?? ev?.to ?? "").trim() || "—";
+
+      rows.push({
+        proposal_id: String(p?.id ?? ""),
+        codigo_protocolo: String(p?.codigo_protocolo ?? p?.codigo ?? "—"),
+        at,
+        actor_role: normActor(ev),
+        gate_from,
+        gate_to,
+        note: normNote(ev),
+      });
+    }
+  }
+
+  rows.sort((a, b) => String(b.at).localeCompare(String(a.at))); // mais recentes primeiro
+  return rows;
 }
 
 function computeSlaDetails(all: any[], fromD: Date | null, toD: Date | null) {
   if (!fromD || !toD) return [];
 
   const fromMs = fromD.getTime();
-  const toMs2 = toD.getTime();
+  const toMs = toD.getTime();
 
   const cols = Object.keys(SLA_TARGET_DAYS) as KanbanColuna[];
   const bucket: Record<string, number[]> = {};
@@ -228,16 +281,15 @@ function computeSlaDetails(all: any[], fromD: Date | null, toD: Date | null) {
       const t = safeDate(normAt(e))?.getTime();
       if (!t) continue;
 
-      const endSeg = Math.min(t, toMs2);
+      const endSeg = Math.min(t, toMs);
       const startSeg = Math.max(curAtMs, fromMs);
-
       if (endSeg > startSeg && bucket[curCol]) bucket[curCol].push(endSeg - startSeg);
 
       curCol = normTo(e) as KanbanColuna;
       curAtMs = t;
     }
 
-    const endSeg = toMs2;
+    const endSeg = toMs;
     const startSeg = Math.max(curAtMs, fromMs);
     if (endSeg > startSeg && bucket[curCol]) bucket[curCol].push(endSeg - startSeg);
   }
@@ -268,319 +320,162 @@ function computeSlaDetails(all: any[], fromD: Date | null, toD: Date | null) {
   });
 }
 
-/* =========================================================
-   SOLICITAÇÕES DE ÁREA (sem depender de imports novos)
-   - lê do localStorage procurando um array com "solicitacao"/"sisgeo"/etc.
-   - calcula métricas 100% baseadas em event-log (history/events)
-========================================================= */
-
-type AreaReqEvent = {
-  id: string;
-  type: string;
-  at: string;
-  actor_role: string;
-  result?: "approved" | "rejected" | string;
-  note?: string;
-  sisgeo_ref?: string;
-};
-
-type AreaReqMetrics = {
-  qtd_solicitacoes_criadas: number;
-  qtd_solicitacoes_em_verificacao: number; // start_verification
-  qtd_solicitacoes_decididas: number; // decision
-  qtd_solicitacoes_deferidas: number;
-  qtd_solicitacoes_indeferidas: number;
-
-  tempo_medio_verificacao_sisgeo_ms: number | null;
-  amostras_verificacao: number;
-
-  tempo_medio_resposta_solicitacao_ms: number | null;
-  amostras_resposta: number;
-};
-
-type AreaReqSemadProd = {
-  total_actions: number;
-  total_start_verification: number;
-  total_sisgeo_updates: number;
-  total_decisions: number;
-  total_deferidas: number;
-  total_indeferidas: number;
-  requests_touched: number;
-  transitions: { key: string; count: number }[];
-};
-
-function isApprovedWord(s: string) {
-  const x = s.trim().toLowerCase();
-  return ["approved", "aprovado", "aprovada", "deferido", "deferida", "ok", "sim"].includes(x);
-}
-function isRejectedWord(s: string) {
-  const x = s.trim().toLowerCase();
-  return ["rejected", "indeferido", "indeferida", "nao", "não", "negado", "invalido", "inválido"].includes(x);
+// ----------------------
+// Consolidado: Solicitações de Área (event-log)
+// ----------------------
+function normalizeDecisionValue(v: any) {
+  const s = String(v ?? "").toLowerCase().trim();
+  if (["approved", "aprovado", "aprovada", "deferido", "deferida"].includes(s)) return "approved";
+  if (["rejected", "rejeitado", "rejeitada", "indeferido", "indeferida"].includes(s)) return "rejected";
+  return null;
 }
 
-function normalizeAreaReqEvent(raw: any): AreaReqEvent | null {
-  if (!raw) return null;
+function getReqEvents(req: any): any[] {
+  const hist = req?.history ?? req?.events ?? req?.historico ?? [];
+  return Array.isArray(hist) ? hist : [];
+}
 
-  const type = String(raw?.type ?? raw?.action ?? raw?.tipo ?? "").trim();
-  const at = String(raw?.at ?? raw?.quando ?? raw?.timestamp ?? raw?.created_at ?? "").trim();
-  const actor_role = String(raw?.actor_role ?? raw?.actor ?? raw?.autor ?? raw?.role ?? "unknown").trim();
+function reqEventType(ev: any) {
+  return String(ev?.type ?? ev?.action ?? ev?.tipo ?? "").trim();
+}
 
-  if (!type || !at) return null;
+function reqEventAt(ev: any) {
+  return String(ev?.at ?? ev?.quando ?? ev?.timestamp ?? ev?.created_at ?? "");
+}
 
-  const note = String(raw?.note ?? raw?.motivo ?? raw?.mensagem ?? raw?.decision_note ?? "").trim() || undefined;
-  const sisgeo_ref =
-    String(raw?.sisgeo_ref ?? raw?.sisgeo_referencia ?? raw?.referencia_sisgeo ?? raw?.referencia ?? "").trim() ||
-    undefined;
+function computeAreaRequestsConsolidated(requests: any[], fromD: Date | null, toD: Date | null) {
+  const created = requests.filter((r) => inRange(String(r?.created_at ?? r?.createdAt), fromD, toD)).length;
 
-  const d0 = String(raw?.decision ?? raw?.resultado ?? raw?.result ?? raw?.outcome ?? "").trim();
-  let result: AreaReqEvent["result"] = undefined;
-  if (d0) {
-    if (isApprovedWord(d0)) result = "approved";
-    else if (isRejectedWord(d0)) result = "rejected";
-    else result = d0;
+  let start_verification = 0;
+  let sisgeo_update = 0;
+  let decisions = 0;
+  let approved = 0;
+  let rejected = 0;
+
+  const sisgeoDur: number[] = [];
+  const responseDur: number[] = [];
+
+  for (const r of requests) {
+    const evs = getReqEvents(r).slice().sort((a, b) => String(reqEventAt(a)).localeCompare(String(reqEventAt(b))));
+    const evsIn = evs.filter((e) => inRange(reqEventAt(e), fromD, toD));
+
+    start_verification += evsIn.filter((e) => reqEventType(e) === "start_verification").length;
+    sisgeo_update += evsIn.filter((e) => reqEventType(e) === "sisgeo_update").length;
+
+    const decs = evsIn.filter((e) => reqEventType(e) === "decision");
+    decisions += decs.length;
+
+    for (const d of decs) {
+      const dv = normalizeDecisionValue(d?.decision ?? d?.result ?? d?.resultado);
+      if (dv === "approved") approved++;
+      if (dv === "rejected") rejected++;
+    }
+
+    const startEv = evs.find((e) => reqEventType(e) === "start_verification" && inRange(reqEventAt(e), fromD, toD));
+    const sisEv = evs.find((e) => reqEventType(e) === "sisgeo_update" && inRange(reqEventAt(e), fromD, toD));
+
+    const startMs = safeDate(startEv ? reqEventAt(startEv) : "")?.getTime();
+    const sisMs = safeDate(sisEv ? reqEventAt(sisEv) : "")?.getTime();
+    if (startMs != null && sisMs != null && Number.isFinite(startMs) && Number.isFinite(sisMs) && sisMs >= startMs) {
+      sisgeoDur.push(sisMs - startMs);
+    }
+
+    const createdMs = safeDate(String(r?.created_at ?? r?.createdAt ?? ""))?.getTime();
+    const decEv = evs.find((e) => reqEventType(e) === "decision" && inRange(reqEventAt(e), fromD, toD));
+    const decMs = safeDate(decEv ? reqEventAt(decEv) : "")?.getTime();
+
+    if (createdMs != null && decMs != null && Number.isFinite(createdMs) && Number.isFinite(decMs) && decMs >= createdMs) {
+      responseDur.push(decMs - createdMs);
+    }
   }
+
+  const avg = (arr: number[]) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
   return {
-    id: String(raw?.id ?? `ev_${Math.random().toString(16).slice(2)}`),
-    type,
-    at,
-    actor_role,
-    result,
-    note,
-    sisgeo_ref,
+    created,
+    start_verification,
+    sisgeo_update,
+    decisions,
+    approved,
+    rejected,
+    avg_sisgeo_ms: avg(sisgeoDur),
+    n_sisgeo: sisgeoDur.length,
+    avg_response_ms: avg(responseDur),
+    n_response: responseDur.length,
   };
 }
 
-function normalizeAreaReq(raw: any) {
-  const id = String(raw?.id ?? raw?.request_id ?? raw?.solicitacao_id ?? `req_${Math.random().toString(16).slice(2)}`);
-  const created_at = String(raw?.created_at ?? raw?.createdAt ?? raw?.criada_em ?? "");
-  const updated_at = String(raw?.updated_at ?? raw?.updatedAt ?? raw?.atualizada_em ?? created_at);
-
-  const historyRaw: any[] = Array.isArray(raw?.history)
-    ? raw.history
-    : Array.isArray(raw?.events)
-    ? raw.events
-    : Array.isArray(raw?.historico)
-    ? raw.historico
-    : [];
-
-  const history = historyRaw.map(normalizeAreaReqEvent).filter(Boolean) as AreaReqEvent[];
-
-  // Se não existir log, sintetiza "create" pelo created_at (apenas p/ não zerar a UI).
-  if (history.length === 0 && created_at) {
-    history.push({
-      id: `ev_create_${id}`,
-      type: "create",
-      at: created_at,
-      actor_role: String(raw?.owner_role ?? raw?.role ?? "adotante"),
-    });
-  }
-
-  history.sort((a, b) => String(a.at).localeCompare(String(b.at)));
-
-  const codigo =
-    String(raw?.codigo_solicitacao ?? raw?.codigo ?? raw?.protocolo ?? raw?.codigo_protocolo ?? "").trim() || "—";
-  const status = String(raw?.status ?? raw?.estado ?? "").trim();
-  const owner_role = String(raw?.owner_role ?? raw?.owner ?? raw?.perfil ?? "").trim();
-
-  return { id, codigo, status, owner_role, created_at, updated_at, history };
+// ----------------------
+// Consolidado: Vistorias (event-log)
+// ----------------------
+function vistEvents(v: any): any[] {
+  const hist = v?.history ?? v?.events ?? v?.historico ?? [];
+  return Array.isArray(hist) ? hist : [];
+}
+function vistType(ev: any) {
+  return String(ev?.type ?? ev?.action ?? ev?.tipo ?? "").trim();
+}
+function vistAt(ev: any) {
+  return String(ev?.at ?? ev?.quando ?? ev?.timestamp ?? ev?.created_at ?? "");
+}
+function vistTo(ev: any) {
+  return String(ev?.to ?? ev?.status_to ?? ev?.status ?? "").trim();
 }
 
-function tryReadJsonArrayFromKey(key: string): any[] | null {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
+function computeVistoriasConsolidated(vistorias: any[], fromD: Date | null, toD: Date | null) {
+  const created = vistorias.filter((v) => inRange(String(v?.created_at ?? v?.createdAt), fromD, toD)).length;
 
-function looksLikeAreaRequestItem(x: any) {
-  if (!x || typeof x !== "object") return false;
-  const keys = Object.keys(x);
-  const hasHistory = keys.includes("history") || keys.includes("events") || keys.includes("historico");
-  const hasSisgeo =
-    keys.some((k) => k.toLowerCase().includes("sisgeo")) ||
-    String(x?.sisgeo_result ?? x?.resultado_sisgeo ?? "").length > 0;
-  const hasInterv =
-    keys.some((k) => k.toLowerCase().includes("interv")) || String(x?.intervencao ?? x?.descricao_intervencao ?? "").length > 0;
-  const hasCoord =
-    keys.some((k) => k.toLowerCase().includes("lat")) || keys.some((k) => k.toLowerCase().includes("lng")) || keys.some((k) => k.toLowerCase().includes("long"));
-  const hasCodigo =
-    String(x?.codigo_solicitacao ?? x?.protocolo ?? x?.codigo ?? x?.codigo_protocolo ?? "").trim().length > 0;
+  let status_changes = 0;
+  let laudos_emitidos = 0;
 
-  // heurística: precisa ter pelo menos 2 sinais
-  const signals = [hasHistory, hasSisgeo, hasInterv, hasCoord, hasCodigo].filter(Boolean).length;
-  return signals >= 2;
-}
+  const durAgendadaRealizada: number[] = [];
+  const durRealizadaLaudo: number[] = [];
 
-function findAreaRequestsKey(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const candidates: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (!k) continue;
-      const lk = k.toLowerCase();
-      if (lk.includes("area") && (lk.includes("request") || lk.includes("solicit"))) candidates.push(k);
+  for (const v of vistorias) {
+    const evs = vistEvents(v).slice().sort((a, b) => String(vistAt(a)).localeCompare(String(vistAt(b))));
+    const evsIn = evs.filter((e) => inRange(vistAt(e), fromD, toD));
+
+    status_changes += evsIn.filter((e) => vistType(e) === "status_change").length;
+    laudos_emitidos += evsIn.filter((e) => vistType(e) === "emit_laudo").length;
+
+    const agendadaMs = safeDate(String(v?.agendada_para ?? ""))?.getTime();
+    const realizadaEv = evs.find(
+      (e) => vistType(e) === "status_change" && (e?.to === "realizada" || vistTo(e) === "realizada")
+    );
+    const realizadaMs = safeDate(realizadaEv ? vistAt(realizadaEv) : "")?.getTime();
+
+    if (agendadaMs != null && realizadaMs != null && Number.isFinite(agendadaMs) && Number.isFinite(realizadaMs) && realizadaMs >= agendadaMs) {
+      const rIso = realizadaEv ? vistAt(realizadaEv) : "";
+      if (inRange(rIso, fromD, toD)) durAgendadaRealizada.push(realizadaMs - agendadaMs);
     }
 
-    // tenta candidatos primeiro
-    for (const k of candidates) {
-      const arr = tryReadJsonArrayFromKey(k);
-      if (!arr || arr.length === 0) continue;
-      if (arr.some(looksLikeAreaRequestItem)) return k;
-    }
+    const laudoEv =
+      evs.find((e) => vistType(e) === "emit_laudo") ||
+      evs.find((e) => vistType(e) === "status_change" && (e?.to === "laudo_emitido" || vistTo(e) === "laudo_emitido"));
 
-    // fallback: varre tudo (MVP)
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (!k) continue;
-      const arr = tryReadJsonArrayFromKey(k);
-      if (!arr || arr.length === 0) continue;
-      if (arr.some(looksLikeAreaRequestItem)) return k;
-    }
+    const laudoMs = safeDate(laudoEv ? vistAt(laudoEv) : "")?.getTime();
 
-    return null;
-  } catch {
-    return null;
+    if (realizadaMs != null && laudoMs != null && Number.isFinite(realizadaMs) && Number.isFinite(laudoMs) && laudoMs >= realizadaMs) {
+      const lIso = laudoEv ? vistAt(laudoEv) : "";
+      if (inRange(lIso, fromD, toD)) durRealizadaLaudo.push(laudoMs - realizadaMs);
+    }
   }
-}
 
-function listAreaRequestsNormalized(): { key: string | null; items: ReturnType<typeof normalizeAreaReq>[] } {
-  const key = findAreaRequestsKey();
-  if (!key) return { key: null, items: [] };
+  const avg = (arr: number[]) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
 
-  const arr = tryReadJsonArrayFromKey(key);
-  if (!arr) return { key, items: [] };
-
-  return { key, items: arr.map(normalizeAreaReq) };
-}
-
-function computeAreaReqMetrics(items: ReturnType<typeof normalizeAreaReq>[], fromD: Date | null, toD: Date | null): AreaReqMetrics {
-  const metrics: AreaReqMetrics = {
-    qtd_solicitacoes_criadas: 0,
-    qtd_solicitacoes_em_verificacao: 0,
-    qtd_solicitacoes_decididas: 0,
-    qtd_solicitacoes_deferidas: 0,
-    qtd_solicitacoes_indeferidas: 0,
-    tempo_medio_verificacao_sisgeo_ms: null,
-    amostras_verificacao: 0,
-    tempo_medio_resposta_solicitacao_ms: null,
-    amostras_resposta: 0,
+  return {
+    created,
+    status_changes,
+    laudos_emitidos,
+    avg_agendada_realizada_ms: avg(durAgendadaRealizada),
+    n_agendada_realizada: durAgendadaRealizada.length,
+    avg_realizada_laudo_ms: avg(durRealizadaLaudo),
+    n_realizada_laudo: durRealizadaLaudo.length,
   };
-
-  if (!fromD || !toD) return metrics;
-
-  const verifDur: number[] = [];
-  const respDur: number[] = [];
-
-  for (const r of items) {
-    const hist = r.history ?? [];
-
-    const creates = hist.filter((e) => e.type === "create" && inRange(e.at, fromD, toD));
-    metrics.qtd_solicitacoes_criadas += creates.length;
-
-    const starts = hist.filter((e) => e.type === "start_verification" && inRange(e.at, fromD, toD));
-    metrics.qtd_solicitacoes_em_verificacao += starts.length;
-
-    const decisions = hist.filter((e) => e.type === "decision" && inRange(e.at, fromD, toD));
-    metrics.qtd_solicitacoes_decididas += decisions.length;
-
-    for (const d of decisions) {
-      const res = String(d.result ?? "");
-      if (res === "approved" || isApprovedWord(res)) metrics.qtd_solicitacoes_deferidas++;
-      else if (res === "rejected" || isRejectedWord(res)) metrics.qtd_solicitacoes_indeferidas++;
-    }
-
-    // tempo verificação: primeiro start_verification -> primeiro sisgeo_update depois
-    const s0 = hist.find((e) => e.type === "start_verification" && inRange(e.at, fromD, toD));
-    if (s0) {
-      const sMs = toMs(s0.at);
-      const sis = hist.find((e) => e.type === "sisgeo_update" && toMs(e.at) >= sMs);
-      if (sis) {
-        const dMs = toMs(sis.at) - sMs;
-        if (Number.isFinite(dMs) && dMs >= 0) verifDur.push(dMs);
-      }
-    }
-
-    // tempo resposta: primeiro create -> primeiro decision depois
-    const c0 = hist.find((e) => e.type === "create" && inRange(e.at, fromD, toD));
-    if (c0) {
-      const cMs = toMs(c0.at);
-      const dec = hist.find((e) => e.type === "decision" && toMs(e.at) >= cMs);
-      if (dec) {
-        const dMs = toMs(dec.at) - cMs;
-        if (Number.isFinite(dMs) && dMs >= 0) respDur.push(dMs);
-      }
-    }
-  }
-
-  if (verifDur.length > 0) {
-    metrics.amostras_verificacao = verifDur.length;
-    metrics.tempo_medio_verificacao_sisgeo_ms = Math.round(verifDur.reduce((a, b) => a + b, 0) / verifDur.length);
-  }
-  if (respDur.length > 0) {
-    metrics.amostras_resposta = respDur.length;
-    metrics.tempo_medio_resposta_solicitacao_ms = Math.round(respDur.reduce((a, b) => a + b, 0) / respDur.length);
-  }
-
-  return metrics;
-}
-
-function computeAreaReqSemadProd(items: ReturnType<typeof normalizeAreaReq>[], fromD: Date | null, toD: Date | null): AreaReqSemadProd {
-  const out: AreaReqSemadProd = {
-    total_actions: 0,
-    total_start_verification: 0,
-    total_sisgeo_updates: 0,
-    total_decisions: 0,
-    total_deferidas: 0,
-    total_indeferidas: 0,
-    requests_touched: 0,
-    transitions: [],
-  };
-
-  if (!fromD || !toD) return out;
-
-  const touched = new Set<string>();
-  const transCount = new Map<string, number>();
-
-  for (const r of items) {
-    for (const e of r.history ?? []) {
-      if (!inRange(e.at, fromD, toD)) continue;
-      if (e.actor_role !== "gestor_semad") continue;
-
-      out.total_actions++;
-      touched.add(r.id);
-
-      if (e.type === "start_verification") out.total_start_verification++;
-      if (e.type === "sisgeo_update") out.total_sisgeo_updates++;
-      if (e.type === "decision") {
-        out.total_decisions++;
-        const res = String(e.result ?? "");
-        if (res === "approved" || isApprovedWord(res)) out.total_deferidas++;
-        else if (res === "rejected" || isRejectedWord(res)) out.total_indeferidas++;
-      }
-
-      // transições (evidência): tipo + resultado (quando houver)
-      const k = e.type === "decision" ? `decision:${String(e.result ?? "unknown")}` : e.type;
-      transCount.set(k, (transCount.get(k) ?? 0) + 1);
-    }
-  }
-
-  out.requests_touched = touched.size;
-  out.transitions = Array.from(transCount.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([key, count]) => ({ key, count }));
-
-  return out;
 }
 
 export function ReportsPage() {
   const { role } = useAuth();
-
   const [tab, setTab] = useState<TabKey>("consolidado");
 
   const today = new Date();
@@ -590,34 +485,14 @@ export function ReportsPage() {
   const [from, setFrom] = useState<string>(toDateInputValue(thirty));
   const [to, setTo] = useState<string>(toDateInputValue(today));
 
-  // proposals: subscribe (mesmo tab)
-  // area requests: não assumimos subscribe existente -> detecta mudança por "poll" leve (MVP)
-  const [tick, setTick] = useState(0);
-  useEffect(() => subscribeProposals(() => setTick((t) => t + 1)), []);
+  // ticks (event-driven)
+  const [tickP, setTickP] = useState(0);
+  const [tickR, setTickR] = useState(0);
+  const [tickV, setTickV] = useState(0);
 
-  const reqKeyRef = useRef<string | null>(null);
-  const reqSnapshotRef = useRef<string>("");
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      const key = findAreaRequestsKey();
-      if (key !== reqKeyRef.current) {
-        reqKeyRef.current = key;
-        reqSnapshotRef.current = key ? localStorage.getItem(key) ?? "" : "";
-        setTick((t) => t + 1);
-        return;
-      }
-
-      if (!key) return;
-      const snap = localStorage.getItem(key) ?? "";
-      if (snap !== reqSnapshotRef.current) {
-        reqSnapshotRef.current = snap;
-        setTick((t) => t + 1);
-      }
-    }, 800);
-
-    return () => window.clearInterval(interval);
-  }, []);
+  useEffect(() => subscribeProposals(() => setTickP((t) => t + 1)), []);
+  useEffect(() => subscribeAreaRequests(() => setTickR((t) => t + 1)), []);
+  useEffect(() => subscribeVistorias(() => setTickV((t) => t + 1)), []);
 
   const fromD = useMemo(() => parseDateStart(from), [from]);
   const toD = useMemo(() => parseDateEnd(to), [to]);
@@ -625,12 +500,11 @@ export function ReportsPage() {
   const fromIso = useMemo(() => (fromD ? fromD.toISOString() : ""), [fromD]);
   const toIso = useMemo(() => (toD ? toD.toISOString() : ""), [toD]);
 
-  const all = useMemo(() => listProposals(), [tick]);
+  const proposals = useMemo(() => listProposals(), [tickP]);
+  const areaRequests = useMemo(() => listAreaRequests(), [tickR]);
+  const vistorias = useMemo(() => listVistorias(), [tickV]);
 
-  // ======================
-  // PROPOSTAS (KANBAN): EVENT-BASED
-  // ======================
-
+  // ===== Propostas (Kanban) =====
   const consolidated = useMemo(() => {
     if (!fromIso || !toIso) {
       return {
@@ -644,100 +518,117 @@ export function ReportsPage() {
       };
     }
     return computeConsolidatedByPeriod(fromIso, toIso);
-  }, [fromIso, toIso, tick]);
+  }, [fromIso, toIso, tickP]);
 
   const semadProd = useMemo(() => {
     if (!fromIso || !toIso) return null;
     return computeSemadProductivity(fromIso, toIso);
-  }, [fromIso, toIso, tick]);
+  }, [fromIso, toIso, tickP]);
+
+  // ===== Overrides (event-log) =====
+  const overridesAll = useMemo(() => extractOverrideRows(proposals, fromD, toD), [proposals, fromD, toD]);
+  const qtd_overrides_sem_vistoria = overridesAll.length;
+  const qtd_overrides_sem_vistoria_semad = overridesAll.filter((o) => o.actor_role === "gestor_semad").length;
+  const lastOverrides = overridesAll.slice(0, 8);
 
   const rowsProtocolos = useMemo(() => {
     if (!fromD || !toD) return [];
-    return all
+    return proposals
       .filter((p) => !!firstCreateInPeriod(p, fromD, toD))
       .sort((a, b) =>
         String(firstCreateInPeriod(a, fromD, toD)?.at ?? "").localeCompare(
           String(firstCreateInPeriod(b, fromD, toD)?.at ?? "")
         )
       );
-  }, [all, fromD, toD]);
+  }, [proposals, fromD, toD]);
 
   const rowsAjustes = useMemo(() => {
     if (!fromD || !toD) return [];
-    return all
+    return proposals
       .filter((p) => !!lastAdjustmentsInPeriod(p, fromD, toD))
       .sort((a, b) =>
         String(lastAdjustmentsInPeriod(b, fromD, toD)?.at ?? "").localeCompare(
           String(lastAdjustmentsInPeriod(a, fromD, toD)?.at ?? "")
         )
       );
-  }, [all, fromD, toD]);
+  }, [proposals, fromD, toD]);
 
   const rowsTermos = useMemo(() => {
     if (!fromD || !toD) return [];
-    return all
+    return proposals
       .filter((p) => !!lastTermSignedInPeriod(p, fromD, toD))
       .sort((a, b) =>
         String(lastTermSignedInPeriod(b, fromD, toD)?.at ?? "").localeCompare(
           String(lastTermSignedInPeriod(a, fromD, toD)?.at ?? "")
         )
       );
-  }, [all, fromD, toD]);
+  }, [proposals, fromD, toD]);
 
   const rowsEmOutros = useMemo(() => {
     if (!fromD || !toD) return [];
-    return all
+    return proposals
       .filter((p) => !!lastOtherOrgEntryInPeriod(p, fromD, toD))
       .sort((a, b) =>
         String(lastOtherOrgEntryInPeriod(b, fromD, toD)?.at ?? "").localeCompare(
           String(lastOtherOrgEntryInPeriod(a, fromD, toD)?.at ?? "")
         )
       );
-  }, [all, fromD, toD]);
+  }, [proposals, fromD, toD]);
 
-  const slaRows = useMemo(() => computeSlaDetails(all, fromD, toD), [all, fromD, toD]);
+  const slaRows = useMemo(() => computeSlaDetails(proposals, fromD, toD), [proposals, fromD, toD]);
 
-  // ======================
-  // SOLICITAÇÕES DE ÁREA: EVENT-BASED (localStorage)
-  // ======================
+  // ===== Solicitações de área =====
+  const consolidatedReq = useMemo(
+    () => computeAreaRequestsConsolidated(areaRequests, fromD, toD),
+    [areaRequests, fromD, toD]
+  );
 
-  const areaReq = useMemo(() => listAreaRequestsNormalized(), [tick]);
-  const areaReqMetrics = useMemo(() => computeAreaReqMetrics(areaReq.items, fromD, toD), [areaReq.items, fromD, toD]);
-  const areaReqSemadProd = useMemo(() => computeAreaReqSemadProd(areaReq.items, fromD, toD), [areaReq.items, fromD, toD]);
+  // ===== Vistorias =====
+  const consolidatedV = useMemo(
+    () => computeVistoriasConsolidated(vistorias, fromD, toD),
+    [vistorias, fromD, toD]
+  );
 
-  // ======================
-  // EXPORTS
-  // ======================
-
+  // ===== EXPORTS =====
   const exportConsolidado = () => {
     const headers = [
       "Período (de)",
       "Período (até)",
 
-      // Propostas (Kanban)
-      "Protocolos criados (propostas)",
-      "Entradas Análise SEMAD (propostas)",
-      "Entradas Análise ECOS (propostas)",
-      "Entradas Decisão (Governo) (propostas)",
-      "Ajustes solicitados (propostas)",
-      "Termos assinados (propostas)",
-      "Indeferidas (propostas)",
-      "Em outros órgãos (ECOS + Governo) (propostas)",
+      // Propostas
+      "Protocolos criados",
+      "Entradas Análise SEMAD",
+      "Entradas Análise ECOS",
+      "Entradas Decisão (Governo)",
+      "Ajustes solicitados",
+      "Termos assinados",
+      "Indeferidas",
 
-      // Solicitações de área
-      "Solicitações criadas (área)",
-      "Start verificação (área)",
-      "Decisões (área)",
-      "Deferidas (área)",
-      "Indeferidas (área)",
+      // Exceções
+      "Overrides sem vistoria (total)",
+      "Overrides sem vistoria (SEMAD)",
+
+      // Solicitações
+      "Solicitações criadas",
+      "Início verificação (start_verification)",
+      "Atualizações SisGeo (sisgeo_update)",
+      "Decisões (solicitação)",
+      "Solicitações deferidas",
+      "Solicitações indeferidas",
       "Tempo médio verificação SisGeo (ms)",
-      "Amostras verificação",
+      "n_verificação_sisgeo",
       "Tempo médio resposta solicitação (ms)",
-      "Amostras resposta",
-      "StorageKey (área)",
-    ];
+      "n_resposta_solicitação",
 
-    const emOutros = consolidated.entered_ecos + consolidated.entered_gov;
+      // Vistorias
+      "Vistorias criadas",
+      "Status changes (vistorias)",
+      "Laudos emitidos",
+      "Tempo médio agendada→realizada (ms)",
+      "n_agendada→realizada",
+      "Tempo médio realizada→laudo (ms)",
+      "n_realizada→laudo",
+    ];
 
     const rows = [
       [
@@ -751,22 +642,32 @@ export function ReportsPage() {
         consolidated.adjustments_requested,
         consolidated.terms_signed,
         consolidated.rejected,
-        emOutros,
 
-        areaReqMetrics.qtd_solicitacoes_criadas,
-        areaReqMetrics.qtd_solicitacoes_em_verificacao,
-        areaReqMetrics.qtd_solicitacoes_decididas,
-        areaReqMetrics.qtd_solicitacoes_deferidas,
-        areaReqMetrics.qtd_solicitacoes_indeferidas,
-        areaReqMetrics.tempo_medio_verificacao_sisgeo_ms,
-        areaReqMetrics.amostras_verificacao,
-        areaReqMetrics.tempo_medio_resposta_solicitacao_ms,
-        areaReqMetrics.amostras_resposta,
-        areaReq.key ?? "",
+        qtd_overrides_sem_vistoria,
+        qtd_overrides_sem_vistoria_semad,
+
+        consolidatedReq.created,
+        consolidatedReq.start_verification,
+        consolidatedReq.sisgeo_update,
+        consolidatedReq.decisions,
+        consolidatedReq.approved,
+        consolidatedReq.rejected,
+        consolidatedReq.avg_sisgeo_ms ?? "",
+        consolidatedReq.n_sisgeo,
+        consolidatedReq.avg_response_ms ?? "",
+        consolidatedReq.n_response,
+
+        consolidatedV.created,
+        consolidatedV.status_changes,
+        consolidatedV.laudos_emitidos,
+        consolidatedV.avg_agendada_realizada_ms ?? "",
+        consolidatedV.n_agendada_realizada,
+        consolidatedV.avg_realizada_laudo_ms ?? "",
+        consolidatedV.n_realizada_laudo,
       ],
     ];
 
-    downloadCSV(`relatorio_consolidado_eventos_${from}_a_${to}.csv`, headers, rows);
+    downloadCSV(`relatorio_consolidado_${from}_a_${to}.csv`, headers, rows);
   };
 
   const exportList = (filename: string, items: any[], eventName: string, getEventAt: (p: any) => string) => {
@@ -784,10 +685,12 @@ export function ReportsPage() {
       "WhatsApp",
       "Último motivo de ajustes (no período)",
     ];
+
     const rows = items.map((p) => {
       const k = (p?.kanban_coluna ?? p?.kanbanColuna ?? "protocolo") as KanbanColuna;
       const c = getAdopterContact(p);
       const aj = lastAdjustmentsInPeriod(p, fromD, toD);
+
       return [
         eventName,
         fmtBR(getEventAt(p)),
@@ -803,6 +706,7 @@ export function ReportsPage() {
         aj?.note ?? "",
       ];
     });
+
     downloadCSV(filename, headers, rows);
   };
 
@@ -813,7 +717,7 @@ export function ReportsPage() {
           <div>
             <h2 style={{ marginTop: 0 }}>Relatórios</h2>
             <p style={{ marginTop: 6, opacity: 0.85 }}>
-              Perfil: <strong>{role}</strong> · Período baseado em <strong>eventos</strong> · SLA com censura (itens ainda abertos no fim do período).
+              Perfil: <strong>{role}</strong> · Período baseado em <strong>eventos</strong> (localStorage) · SLA com censura.
             </p>
           </div>
 
@@ -833,7 +737,13 @@ export function ReportsPage() {
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              style={{ width: "100%", marginTop: 6, padding: 10, borderRadius: 12, border: "1px solid var(--border)" }}
+              style={{
+                width: "100%",
+                marginTop: 6,
+                padding: 10,
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+              }}
             />
           </label>
 
@@ -843,83 +753,231 @@ export function ReportsPage() {
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              style={{ width: "100%", marginTop: 6, padding: 10, borderRadius: 12, border: "1px solid var(--border)" }}
+              style={{
+                width: "100%",
+                marginTop: 6,
+                padding: 10,
+                borderRadius: 12,
+                border: "1px solid var(--border)",
+              }}
             />
           </label>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" className="btn" onClick={() => setTab("consolidado")}>Consolidado</button>
-            <button type="button" className="btn" onClick={() => setTab("protocolos")}>Protocolos</button>
-            <button type="button" className="btn" onClick={() => setTab("em_analise_outros")}>Em outros órgãos</button>
-            <button type="button" className="btn" onClick={() => setTab("ajustes")}>Ajustes</button>
-            <button type="button" className="btn" onClick={() => setTab("termos")}>Termos assinados</button>
-            <button type="button" className="btn" onClick={() => setTab("produtividade")}>Produtividade (SEMAD)</button>
-            <button type="button" className="btn" onClick={() => setTab("sla")}>SLA (Kanban)</button>
+            <button type="button" className="btn" onClick={() => setTab("consolidado")}>
+              Consolidado
+            </button>
+            <button type="button" className="btn" onClick={() => setTab("protocolos")}>
+              Protocolos
+            </button>
+            <button type="button" className="btn" onClick={() => setTab("em_analise_outros")}>
+              Em outros órgãos
+            </button>
+            <button type="button" className="btn" onClick={() => setTab("ajustes")}>
+              Ajustes
+            </button>
+            <button type="button" className="btn" onClick={() => setTab("termos")}>
+              Termos assinados
+            </button>
+            <button type="button" className="btn" onClick={() => setTab("produtividade")}>
+              Produtividade (SEMAD)
+            </button>
+            <button type="button" className="btn" onClick={() => setTab("sla")}>
+              SLA (Kanban)
+            </button>
           </div>
         </div>
 
         <hr className="hr" />
 
+        {/* CONSOLIDADO */}
         {tab === "consolidado" ? (
-          <div className="grid cols-3">
+          <div className="grid cols-2">
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
               <h3>Consolidado — Propostas (Kanban)</h3>
               <p style={{ marginTop: 6 }}>
                 Período: <strong>{from}</strong> a <strong>{to}</strong>
               </p>
 
-              <p>Protocolos criados: <strong>{consolidated.protocols_created}</strong></p>
-              <p>Entradas em Análise SEMAD: <strong>{consolidated.entered_semad}</strong></p>
-              <p>Entradas em Análise ECOS: <strong>{consolidated.entered_ecos}</strong></p>
-              <p>Entradas em Decisão (Governo): <strong>{consolidated.entered_gov}</strong></p>
-              <p>Ajustes solicitados: <strong>{consolidated.adjustments_requested}</strong></p>
-              <p>Termos assinados: <strong>{consolidated.terms_signed}</strong></p>
-              <p>Indeferidas: <strong>{consolidated.rejected}</strong></p>
+              <p>
+                Protocolos criados: <strong>{consolidated.protocols_created}</strong>
+              </p>
+              <p>
+                Entradas em Análise SEMAD: <strong>{consolidated.entered_semad}</strong>
+              </p>
+              <p>
+                Entradas em Análise ECOS: <strong>{consolidated.entered_ecos}</strong>
+              </p>
+              <p>
+                Entradas em Decisão (Governo): <strong>{consolidated.entered_gov}</strong>
+              </p>
+              <p>
+                Ajustes solicitados: <strong>{consolidated.adjustments_requested}</strong>
+              </p>
+              <p>
+                Termos assinados: <strong>{consolidated.terms_signed}</strong>
+              </p>
+              <p>
+                Indeferidas: <strong>{consolidated.rejected}</strong>
+              </p>
 
               <hr className="hr" />
-              <p>Em outros órgãos (ECOS + Governo): <strong>{consolidated.entered_ecos + consolidated.entered_gov}</strong></p>
+              <p>
+                Em outros órgãos (ECOS + Governo):{" "}
+                <strong>{consolidated.entered_ecos + consolidated.entered_gov}</strong>
+              </p>
+            </div>
+
+            {/* ✅ Mantém: Solicitações de área */}
+            <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
+              <h3>Consolidado — Solicitações de área</h3>
+              <p className="muted" style={{ marginTop: 6 }}>
+                Fonte: event-log (history/events) em localStorage
+              </p>
+
+              <p>
+                Solicitações criadas: <strong>{consolidatedReq.created}</strong>
+              </p>
+              <p>
+                Início verificação (start_verification): <strong>{consolidatedReq.start_verification}</strong>
+              </p>
+              <p>
+                Atualizações SisGeo (sisgeo_update): <strong>{consolidatedReq.sisgeo_update}</strong>
+              </p>
+              <p>
+                Decisões (decision): <strong>{consolidatedReq.decisions}</strong>
+              </p>
+              <p>
+                Deferidas: <strong>{consolidatedReq.approved}</strong>
+              </p>
+              <p>
+                Indeferidas: <strong>{consolidatedReq.rejected}</strong>
+              </p>
+
+              <hr className="hr" />
+              <p>
+                Tempo médio verificação SisGeo: <strong>{formatDuration(consolidatedReq.avg_sisgeo_ms)}</strong>{" "}
+                <span className="muted">(n={consolidatedReq.n_sisgeo})</span>
+              </p>
+              <p>
+                Tempo médio resposta solicitação: <strong>{formatDuration(consolidatedReq.avg_response_ms)}</strong>{" "}
+                <span className="muted">(n={consolidatedReq.n_response})</span>
+              </p>
             </div>
 
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>Consolidado — Solicitações de área</h3>
-              <p style={{ marginTop: 6, opacity: 0.85 }}>
-                Fonte: event-log (history/events) em localStorage {areaReq.key ? <code>{areaReq.key}</code> : <span>(não detectado)</span>}
+              <h3>Consolidado — Vistorias</h3>
+              <p className="muted" style={{ marginTop: 6 }}>
+                Fonte: event-log (history/events) em localStorage
               </p>
 
-              <p>Solicitações criadas: <strong>{areaReqMetrics.qtd_solicitacoes_criadas}</strong></p>
-              <p>Início verificação (start_verification): <strong>{areaReqMetrics.qtd_solicitacoes_em_verificacao}</strong></p>
-              <p>Decisões (decision): <strong>{areaReqMetrics.qtd_solicitacoes_decididas}</strong></p>
-              <p>Deferidas: <strong>{areaReqMetrics.qtd_solicitacoes_deferidas}</strong></p>
-              <p>Indeferidas: <strong>{areaReqMetrics.qtd_solicitacoes_indeferidas}</strong></p>
+              <p>
+                Vistorias criadas: <strong>{consolidatedV.created}</strong>
+              </p>
+              <p>
+                Status changes: <strong>{consolidatedV.status_changes}</strong>
+              </p>
+              <p>
+                Laudos emitidos: <strong>{consolidatedV.laudos_emitidos}</strong>
+              </p>
+
+              <hr className="hr" />
+              <p>
+                Tempo médio agendada → realizada: <strong>{formatDuration(consolidatedV.avg_agendada_realizada_ms)}</strong>{" "}
+                <span className="muted">(n={consolidatedV.n_agendada_realizada})</span>
+              </p>
+              <p>
+                Tempo médio realizada → laudo: <strong>{formatDuration(consolidatedV.avg_realizada_laudo_ms)}</strong>{" "}
+                <span className="muted">(n={consolidatedV.n_realizada_laudo})</span>
+              </p>
+            </div>
+
+            {/* ✅ NOVO: Exceções / Governança */}
+            <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
+              <h3>Exceções / Governança</h3>
+              <p className="muted" style={{ marginTop: 6 }}>
+                Fonte: event-log de <code>mvp_proposals_v1</code> (history[]).
+              </p>
+
+              <p>
+                Overrides sem vistoria (total): <strong>{qtd_overrides_sem_vistoria}</strong>
+              </p>
+              <p>
+                Overrides sem vistoria (SEMAD): <strong>{qtd_overrides_sem_vistoria_semad}</strong>
+              </p>
 
               <hr className="hr" />
 
-              <p>
-                Tempo médio verificação SisGeo:{" "}
-                <strong>{formatDuration(areaReqMetrics.tempo_medio_verificacao_sisgeo_ms)}</strong>{" "}
-                <span style={{ opacity: 0.75 }}>(n={areaReqMetrics.amostras_verificacao})</span>
-              </p>
-              <p>
-                Tempo médio resposta solicitação:{" "}
-                <strong>{formatDuration(areaReqMetrics.tempo_medio_resposta_solicitacao_ms)}</strong>{" "}
-                <span style={{ opacity: 0.75 }}>(n={areaReqMetrics.amostras_resposta})</span>
-              </p>
+              {lastOverrides.length === 0 ? (
+                <div className="muted">Nenhum override no período.</div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        {["Protocolo", "Gate", "Data", "Motivo"].map((h) => (
+                          <th
+                            key={h}
+                            style={{
+                              textAlign: "left",
+                              padding: 10,
+                              borderBottom: "1px solid var(--border)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lastOverrides.map((o) => (
+                        <tr key={`${o.proposal_id}_${o.at}`}>
+                          <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
+                            {o.codigo_protocolo}
+                          </td>
+                          <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
+                            {o.gate_from} → {o.gate_to}
+                          </td>
+                          <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
+                            {fmtBR(o.at)}
+                          </td>
+                          <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)", whiteSpace: "pre-wrap" }}>
+                            {o.note?.trim() ? o.note : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
               <h3>Observação</h3>
-              <p style={{ marginTop: 6 }}>
+              <p style={{ marginTop: 6, opacity: 0.85 }}>
                 Se algum painel ficar zerado:
                 <br />• Kanban depende de <code>moveProposal(..., actor_role)</code>.
-                <br />• Solicitações dependem de eventos <code>start_verification</code>, <code>sisgeo_update</code>, <code>decision</code>.
+                <br />• Overrides dependem de evento <code>override_no_vistoria</code> (e do motivo em <code>note</code>).
+                <br />• Solicitações dependem de <code>start_verification</code>, <code>sisgeo_update</code>, <code>decision</code>.
+                <br />• Vistorias dependem de <code>create</code>, <code>status_change</code>, <code>emit_laudo</code>.
               </p>
             </div>
           </div>
         ) : null}
 
+        {/* PROTOCOLOS */}
         {tab === "protocolos" ? (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
               <h3 style={{ margin: 0 }}>Protocolos criados no período</h3>
               <button
                 type="button"
@@ -976,9 +1034,18 @@ export function ReportsPage() {
           </div>
         ) : null}
 
+        {/* EM OUTROS ÓRGÃOS */}
         {tab === "em_analise_outros" ? (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
               <h3 style={{ margin: 0 }}>Entradas em outros órgãos (ECOS + Governo) no período</h3>
               <button
                 type="button"
@@ -1039,9 +1106,18 @@ export function ReportsPage() {
           </div>
         ) : null}
 
+        {/* AJUSTES */}
         {tab === "ajustes" ? (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
               <h3 style={{ margin: 0 }}>Ajustes solicitados no período</h3>
               <button
                 type="button"
@@ -1100,9 +1176,18 @@ export function ReportsPage() {
           </div>
         ) : null}
 
+        {/* TERMOS */}
         {tab === "termos" ? (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
               <h3 style={{ margin: 0 }}>Termos assinados no período</h3>
               <button
                 type="button"
@@ -1159,10 +1244,11 @@ export function ReportsPage() {
           </div>
         ) : null}
 
+        {/* PRODUTIVIDADE */}
         {tab === "produtividade" ? (
-          <div className="grid cols-3">
+          <div className="grid cols-2">
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>Produtividade — SEMAD (Propostas / Kanban)</h3>
+              <h3>Produtividade — SEMAD (por eventos)</h3>
 
               {!semadProd ? (
                 <p style={{ opacity: 0.75 }}>Selecione um período válido.</p>
@@ -1176,6 +1262,14 @@ export function ReportsPage() {
                   </p>
                   <p>
                     Propostas tocadas (SEMAD): <strong>{semadProd.proposals_touched}</strong>
+                  </p>
+
+                  <hr className="hr" />
+
+                  {/* ✅ NOVO: overrides (derivado do event-log de proposals) */}
+                  <p>
+                    Overrides sem vistoria (SEMAD): <strong>{qtd_overrides_sem_vistoria_semad}</strong>{" "}
+                    <span className="muted">(event-log: override_no_vistoria)</span>
                   </p>
 
                   <hr className="hr" />
@@ -1197,61 +1291,33 @@ export function ReportsPage() {
             </div>
 
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>Produtividade — SEMAD (Solicitações de área)</h3>
-              <p style={{ marginTop: 6, opacity: 0.85 }}>
-                Fonte: eventos com <code>actor_role="gestor_semad"</code> em localStorage {areaReq.key ? <code>{areaReq.key}</code> : <span>(não detectado)</span>}
-              </p>
-
-              <p>Ações (SEMAD): <strong>{areaReqSemadProd.total_actions}</strong></p>
-              <p>start_verification: <strong>{areaReqSemadProd.total_start_verification}</strong></p>
-              <p>sisgeo_update: <strong>{areaReqSemadProd.total_sisgeo_updates}</strong></p>
-              <p>decision (total): <strong>{areaReqSemadProd.total_decisions}</strong></p>
-              <p>
-                decision:approved: <strong>{areaReqSemadProd.total_deferidas}</strong> · decision:rejected:{" "}
-                <strong>{areaReqSemadProd.total_indeferidas}</strong>
-              </p>
-              <p>Solicitações tocadas: <strong>{areaReqSemadProd.requests_touched}</strong></p>
-
-              <hr className="hr" />
-
-              <h3 style={{ marginTop: 0 }}>Ações mais frequentes</h3>
-              {areaReqSemadProd.transitions.length === 0 ? (
-                <p style={{ opacity: 0.75 }}>Sem ações registradas no período.</p>
-              ) : (
-                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {areaReqSemadProd.transitions.map((t) => (
-                    <li key={t.key}>
-                      <strong>{t.key}</strong>: {t.count}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
               <h3>Nota técnica</h3>
               <p style={{ marginTop: 6, opacity: 0.85 }}>
-                Para evidência “reproduzível por localStorage”, cada ação do gestor precisa persistir:
-                <br />• Propostas: <code>history[]</code> com <code>type="move|request_adjustments|decision"</code>, <code>at</code>, <code>actor_role</code>.
-                <br />• Solicitações: <code>history[]</code> com <code>type="start_verification|sisgeo_update|decision"</code>, <code>at</code>, <code>actor_role</code>, <code>result</code>, <code>note</code>.
+                Este painel usa somente evidência do <strong>event-log</strong>:
+                <br />• Kanban: <code>move</code> / <code>request_adjustments</code>
+                <br />• Override: <code>override_no_vistoria</code>
+                <br />
+                Se “Overrides sem vistoria” ficar zerado, verifique se o fluxo está persistindo o evento no{" "}
+                <code>history[]</code> antes do <code>move</code>.
               </p>
             </div>
           </div>
         ) : null}
 
+        {/* SLA */}
         {tab === "sla" ? (
           <div>
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
               <h3>SLA por etapa (tempo de permanência)</h3>
               <p style={{ marginTop: 6, opacity: 0.85 }}>
-                Calculado por segmentos (moves) com recorte no período e censura no fim do intervalo.
+                Métricas calculadas a partir do log de <strong>moves</strong>, com recorte no período e censura no fim do intervalo.
               </p>
 
               <div style={{ marginTop: 10, overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      {["Coluna", "Amostras (segmentos)", "Meta", "P50", "P80", "P95", "Violação (≥ meta)"].map((h) => (
+                      {["Coluna", "Amostras", "Meta", "P50", "P80", "P95", "Violação (≥ meta)"].map((h) => (
                         <th key={h} style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>
                           {h}
                         </th>
@@ -1288,7 +1354,8 @@ export function ReportsPage() {
               </div>
 
               <p style={{ marginTop: 12, opacity: 0.85 }}>
-                Para SLA “oficial”: definir dias úteis vs corridos e separar itens censurados (ainda abertos no fim do período).
+                Para um SLA “oficial”, as metas devem ser definidas por norma interna (dias úteis vs corridos) e a violação pode ser separada em:
+                (i) segmentos encerrados no período; (ii) itens censurados (ainda abertos).
               </p>
             </div>
           </div>

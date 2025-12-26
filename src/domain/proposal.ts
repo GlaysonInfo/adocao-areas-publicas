@@ -19,7 +19,21 @@ export type KanbanColuna =
   | "termo_assinado"
   | "indeferida";
 
-export type ProposalEventType = "create" | "move" | "request_adjustments" | "decision";
+/**
+ * EVENT LOG (fonte de verdade p/ relatórios, produtividade e SLA)
+ *
+ * - create: criação do protocolo
+ * - move: movimentação no Kanban
+ * - request_adjustments: solicitação de ajustes (evento canônico pro adotante)
+ * - decision: decisão terminal (approved/rejected)
+ * - override_no_vistoria: exceção deliberada (seguir fluxo sem vistoria pré-adoção)
+ */
+export type ProposalEventType =
+  | "create"
+  | "move"
+  | "request_adjustments"
+  | "decision"
+  | "override_no_vistoria";
 
 export type ProposalEvent = {
   id: string;
@@ -27,11 +41,16 @@ export type ProposalEvent = {
   at: string; // ISO
   actor_role: string;
 
-  // move / request_adjustments
+  // move / request_adjustments / override_no_vistoria
   from?: KanbanColuna;
   to?: KanbanColuna;
 
-  // request_adjustments
+  /**
+   * Texto livre / motivo:
+   * - request_adjustments: orientações ao adotante
+   * - move: observação (opcional)
+   * - override_no_vistoria: justificativa obrigatória do override (regra na storage/UI)
+   */
   note?: string;
 
   // decision

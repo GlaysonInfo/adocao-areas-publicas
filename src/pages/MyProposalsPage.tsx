@@ -36,7 +36,10 @@ export function MyProposalsPage() {
         {items.length === 0 ? (
           <div className="card pad">
             <h3 style={{ marginTop: 0 }}>Nenhuma proposta encontrada</h3>
-            <p>Crie uma nova proposta a partir de uma área disponível ou protocole uma solicitação quando a área não estiver cadastrada.</p>
+            <p>
+              Crie uma nova proposta a partir de uma área disponível ou protocole uma solicitação quando a área não estiver
+              cadastrada.
+            </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Link className="btn btn--primary" to="/propostas/nova">
                 Nova proposta
@@ -50,9 +53,11 @@ export function MyProposalsPage() {
           <div className="list">
             {items.map((p) => (
               <article key={p.id} className="card pad item">
-                <div className="item__head">
-                  <div>
+                {/* ✅ Linha: texto à esquerda e ações à direita, sem sobrepor */}
+                <div className="proposalRow">
+                  <div className="proposalRow__main">
                     <h3 className="item__title">{p.codigo_protocolo}</h3>
+
                     <div className="item__meta">
                       <strong>Área:</strong> {p.area_nome}
                     </div>
@@ -61,7 +66,7 @@ export function MyProposalsPage() {
                     </div>
                   </div>
 
-                  <div className="item__actions">
+                  <div className="proposalRow__actions">
                     <Link className="btn btn--subtle" to={`/minhas-propostas/${encodeURIComponent(p.id)}`}>
                       Abrir
                     </Link>

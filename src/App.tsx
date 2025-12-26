@@ -1,3 +1,4 @@
+// src/App.tsx
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AppRoutes } from "./routes/AppRoutes";
 import { isManagerRole, useAuth } from "./auth/AuthContext";
@@ -13,17 +14,21 @@ export default function App() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
+  // Mantém layout "full" apenas no Kanban (como você já tinha)
   const isKanban = pathname.startsWith("/gestor/kanban");
 
   const is_admin = role === "administrador";
   const is_manager = role ? isManagerRole(role) : false;
   const is_adopter = role === "adotante_pf" || role === "adotante_pj";
 
-  // ✅ Relatórios só para gestor_semad e administrador
+  // Relatórios: somente gestor_semad e admin
   const can_reports = role === "gestor_semad" || is_admin;
 
-  // ✅ Solicitações de área: somente gestor_semad e admin (evita link inútil para outros gestores)
+  // Solicitações de área (gestor): somente gestor_semad e admin
   const can_area_requests = role === "gestor_semad" || is_admin;
+
+  // Vistorias (gestor): por padrão, SEMAD e admin (ajuste se quiser liberar para outros gestores)
+  const can_vistorias = role === "gestor_semad" || is_admin;
 
   return (
     <div>
@@ -60,7 +65,6 @@ export default function App() {
                   Minhas Propostas
                 </NavLink>
 
-                {/* ✅ Novo fluxo: área não cadastrada */}
                 <NavLink to="/solicitacoes-area/nova" className={navClass}>
                   Solicitar área
                 </NavLink>
@@ -78,14 +82,21 @@ export default function App() {
               </NavLink>
             ) : null}
 
-            {/* ✅ Solicitações de área (somente gestor_semad e admin) */}
+            {/* Solicitações de área (gestor_semad + admin) */}
             {can_area_requests ? (
               <NavLink to="/gestor/solicitacoes-area" className={navClass}>
                 Solicitações de área
               </NavLink>
             ) : null}
 
-            {/* ✅ Relatórios (somente gestor_semad e admin) */}
+            {/* Vistorias (gestor_semad + admin) */}
+            {can_vistorias ? (
+              <NavLink to="/gestor/vistorias" className={navClass}>
+                Vistorias
+              </NavLink>
+            ) : null}
+
+            {/* Relatórios (gestor_semad + admin) */}
             {can_reports ? (
               <NavLink to="/relatorios" className={navClass}>
                 Relatórios

@@ -9,8 +9,6 @@ import type { DocumentoMeta, DocumentoTipo, PropostaAdocao } from "../domain/pro
 import { listAreasPublic, subscribeAreas } from "../storage/areas";
 import { createProposal } from "../storage/proposals";
 import { useAuth } from "../auth/AuthContext";
-
-// ✅ FIX: se protocol.ts exporta next_protocol, isso elimina o erro do Vite
 import { next_protocol as nextProtocol } from "../storage/protocol";
 
 const doc_types: { tipo: DocumentoTipo; label: string }[] = [
@@ -145,21 +143,19 @@ export function ProposalNewPage() {
         <div className="card pad">
           <form onSubmit={handleSubmit(onSubmit)}>
             {step === 1 ? (
-              <section style={{ display: "grid", gap: 12, maxWidth: 820 }}>
-                <div>
-                  <label>
-                    Área disponível:&nbsp;
-                    <select className="input" {...register("area_id")}>
-                      <option value="">Selecione</option>
-                      {areas_disponiveis.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.nome} — {a.bairro} ({a.metragem_m2} m²)
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {errors.area_id ? <div className="err">{errors.area_id.message}</div> : null}
-                </div>
+              <section className="formWide">
+                <label className="fieldLabel">
+                  Área disponível
+                  <select className="input" {...register("area_id")}>
+                    <option value="">Selecione</option>
+                    {areas_disponiveis.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.nome} — {a.bairro} ({a.metragem_m2} m²)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {errors.area_id ? <div className="err">{errors.area_id.message}</div> : null}
 
                 {areaSelecionada ? (
                   <div className="card pad" style={{ background: "rgba(255,255,255,.7)" }}>
@@ -176,14 +172,11 @@ export function ProposalNewPage() {
                   </div>
                 ) : null}
 
-                <div>
-                  <label>
-                    Descrição do plano (mín. 30 caracteres):
-                    <br />
-                    <textarea className="input" {...register("descricao_plano")} rows={5} />
-                  </label>
-                  {errors.descricao_plano ? <div className="err">{errors.descricao_plano.message}</div> : null}
-                </div>
+                <label className="fieldLabel">
+                  Descrição do plano (mín. 30 caracteres)
+                  <textarea className="input" {...register("descricao_plano")} rows={7} />
+                </label>
+                {errors.descricao_plano ? <div className="err">{errors.descricao_plano.message}</div> : null}
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button className="btn btn--primary" type="button" onClick={nextFromStep1}>
@@ -194,28 +187,22 @@ export function ProposalNewPage() {
             ) : null}
 
             {step === 2 ? (
-              <section style={{ display: "grid", gap: 12, maxWidth: 820 }}>
+              <section className="formWide">
                 <p style={{ margin: 0 }}>
                   Anexos obrigatórios (MVP guarda apenas metadados; o upload real entra com backend).
                 </p>
 
-                <div>
-                  <label>
-                    {doc_types[0].label}
-                    <br />
-                    <input type="file" {...register("carta_intencao")} />
-                  </label>
-                  {errors.carta_intencao ? <div className="err">{errors.carta_intencao.message as string}</div> : null}
-                </div>
+                <label className="fieldLabel">
+                  {doc_types[0].label}
+                  <input type="file" {...register("carta_intencao")} />
+                </label>
+                {errors.carta_intencao ? <div className="err">{errors.carta_intencao.message as string}</div> : null}
 
-                <div>
-                  <label>
-                    {doc_types[1].label}
-                    <br />
-                    <input type="file" {...register("projeto_resumo")} />
-                  </label>
-                  {errors.projeto_resumo ? <div className="err">{errors.projeto_resumo.message as string}</div> : null}
-                </div>
+                <label className="fieldLabel">
+                  {doc_types[1].label}
+                  <input type="file" {...register("projeto_resumo")} />
+                </label>
+                {errors.projeto_resumo ? <div className="err">{errors.projeto_resumo.message as string}</div> : null}
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button className="btn" type="button" onClick={() => setStep(1)}>
@@ -229,7 +216,7 @@ export function ProposalNewPage() {
             ) : null}
 
             {step === 3 ? (
-              <section style={{ display: "grid", gap: 12, maxWidth: 820 }}>
+              <section className="formWide">
                 <h3 style={{ margin: 0 }}>Revisão</h3>
 
                 <div className="card pad" style={{ background: "rgba(255,255,255,.7)" }}>
