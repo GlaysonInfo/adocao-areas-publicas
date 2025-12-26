@@ -34,3 +34,8 @@
   }
 }
 
+{
+  "scripts": {
+    "docs:gen": "node scripts/docs-generate.mjs"
+  }
+}
