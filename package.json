@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "docs:asbuilt": "node scripts/as-built/generate_as_built.mjs"
+    "docs:asbuilt": "node scripts/as-built/generate_as_built.mjs",
+    "docs:gen": "node scripts/as-built/gen.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -31,11 +32,5 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4"
-  }
-}
-
-{
-  "scripts": {
-    "docs:gen": "node scripts/docs-generate.mjs"
   }
 }
