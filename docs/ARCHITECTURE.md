@@ -1,6 +1,6 @@
 # ARCHITECTURE (as-built)
 
-> **Gerado em:** 2026-03-21T10:46:00.493Z
+> **Gerado em:** 2026-03-21T12:57:37.169Z
 
 ## Visão geral
 A aplicação está organizada como front-end React/Vite com persistência local em `localStorage`, separando domínio, storage, páginas, autenticação e rotas.

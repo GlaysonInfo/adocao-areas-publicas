@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { listMyAreaRequests, subscribeAreaRequests } from "../storage/area_requests";
+import { areaRequestsService } from "../services/areaRequests.service";
 
 const LABEL: Record<string, string> = {
   solicitada: "Solicitada",
-  em_verificacao: "Em verificação (SisGeo)",
+  em_verificacao: "Em verificaÃ§Ã£o (SisGeo)",
   aprovada: "Aprovada",
   indeferida: "Indeferida",
 };
@@ -14,30 +14,30 @@ export function MyAreaRequestsPage() {
   const { role } = useAuth();
   const [tick, setTick] = useState(0);
 
-  useEffect(() => subscribeAreaRequests(() => setTick((t) => t + 1)), []);
-  const items = useMemo(() => listMyAreaRequests(role), [role, tick]);
+  useEffect(() => areaRequestsService.subscribe(() => setTick((t) => t + 1)), []);
+  const items = useMemo(() => areaRequestsService.listMine(role), [role, tick]);
 
   return (
     <div className="container">
       <div className="page">
         <header className="page__header">
           <div className="page__titlewrap">
-            <h1 className="page__title">Minhas solicitações de área</h1>
-            <p className="page__subtitle">Acompanhe aprovações/indeferimentos e, quando aprovado, acesse a proposta gerada.</p>
+            <h1 className="page__title">Minhas solicitaÃ§Ãµes de Ã¡rea</h1>
+            <p className="page__subtitle">Acompanhe aprovaÃ§Ãµes/indeferimentos e, quando aprovado, acesse a proposta gerada.</p>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link className="btn btn--primary" to="/solicitacoes-area/nova">
-              Nova solicitação
+              Nova solicitaÃ§Ã£o
             </Link>
             <Link className="btn" to="/propostas/nova">
-              Nova proposta (área já cadastrada)
+              Nova proposta (Ã¡rea jÃ¡ cadastrada)
             </Link>
           </div>
         </header>
 
         {items.length === 0 ? (
-          <div className="card pad">Nenhuma solicitação ainda.</div>
+          <div className="card pad">Nenhuma solicitaÃ§Ã£o ainda.</div>
         ) : (
           <div className="grid" style={{ gap: 12 }}>
             {items.map((r) => (
@@ -63,7 +63,7 @@ export function MyAreaRequestsPage() {
                       Motivo:{" "}
                       {(() => {
                         const last = [...(r.history ?? [])].reverse().find((e) => e.type === "decision" && (e as any).decision === "rejected");
-                        return (last as any)?.decision_note ?? "—";
+                        return (last as any)?.decision_note ?? "â€”";
                       })()}
                     </div>
                   ) : null}
@@ -76,3 +76,4 @@ export function MyAreaRequestsPage() {
     </div>
   );
 }
+

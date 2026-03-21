@@ -1,6 +1,6 @@
 # ROADMAP (as-built)
 
-> **Gerado em:** 2026-03-21T10:46:00.493Z
+> **Gerado em:** 2026-03-21T12:57:37.169Z
 
 ## Estado atual
 - Portal com perfis: público, adotante, gestores e administrador.

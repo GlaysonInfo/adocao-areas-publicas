@@ -1,15 +1,8 @@
-// src/pages/admin/AdminAreasPage.tsx
+﻿// src/pages/admin/AdminAreasPage.tsx
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AreaPublica, AreaStatus, AreaArquivoMeta } from "../../domain/area";
-import {
-  createArea,
-  listAreas,
-  setAreaActive,
-  setAreaGeoFile,
-  upsertArea,
-  clearAreasForImportTesting,
-} from "../../storage/areas";
+import { areasService } from "../../services";
 
 const STATUS_LABEL: Record<AreaStatus, string> = {
   disponivel: "Disponível",
@@ -78,12 +71,12 @@ export function AdminAreasPage() {
 
   const [editing, setEditing] = useState<Draft | null>(null);
 
-  const items = useMemo(() => listAreas(), [tick]);
+  const items = useMemo(() => areasService.listAll(), [tick]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     return items
-      .filter((a) => {
+      .filter((a: AreaPublica) => {
         if (status && a.status !== status) return false;
         if (onlyActive === "active" && !a.ativo) return false;
         if (onlyActive === "inactive" && a.ativo) return false;
@@ -94,7 +87,7 @@ export function AdminAreasPage() {
           a.bairro.toLowerCase().includes(query)
         );
       })
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      .sort((a: AreaPublica, b: AreaPublica) => a.nome.localeCompare(b.nome, "pt-BR"));
   }, [items, q, status, onlyActive]);
 
   const openNew = () => setEditing(newDraft());
@@ -145,9 +138,8 @@ export function AdminAreasPage() {
       longitude_centro: editing.longitude_centro,
     };
 
-    // evita duplicidade de código em criação
     if (!editing.id) {
-      const already = items.some((a) => a.codigo === codigo);
+      const already = items.some((a: AreaPublica) => a.codigo === codigo);
       if (already) {
         alert(`Já existe uma área com o código "${codigo}". Use "Editar" para atualizar.`);
         return;
@@ -157,29 +149,26 @@ export function AdminAreasPage() {
     let areaId: string | null = null;
 
     if (editing.id) {
-      const current = items.find((x) => x.id === editing.id);
+      const current = items.find((x: AreaPublica) => x.id === editing.id);
       if (!current) return;
 
-      upsertArea({
+      areasService.upsert({
         ...current,
         ...payloadBase,
       });
 
       areaId = editing.id;
     } else {
-      const created = createArea({
+      const created = areasService.create({
         ...payloadBase,
         geo_arquivo: undefined,
-        created_at: "", // ignorado pelo storage (ele seta)
-        updated_at: "", // ignorado pelo storage (ele seta)
       } as any);
 
       areaId = created.id;
     }
 
-    // KML/KMZ opcional (guardamos só metadados no MVP)
     if (areaId && editing.geoFileList && editing.geoFileList.length > 0) {
-      setAreaGeoFile(areaId, fileMeta(editing.geoFileList));
+      areasService.setGeoFile(areaId, fileMeta(editing.geoFileList));
     }
 
     setEditing(null);
@@ -198,30 +187,29 @@ export function AdminAreasPage() {
           </div>
 
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-  <Link to="/admin/areas/importar" className="btn">
-    Importar CSV
-  </Link>
+            <Link to="/admin/areas/importar" className="btn">
+              Importar CSV
+            </Link>
 
-    <button
-      type="button"
-      className="btn"
-      onClick={() => {
-      const ok = window.confirm(
-        "Isso vai zerar o cadastro de Áreas e desativar o seed do mock. Continuar?"
-      );
-      if (!ok) return;
-      clearAreasForImportTesting();
-      setTick((t) => t + 1); // força recarregar a lista na tela
-     }}
-     >
-     Zerar áreas (teste CSV)
-    </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                const ok = window.confirm(
+                  "Isso vai zerar o cadastro de Áreas e desativar o seed do mock. Continuar?"
+                );
+                if (!ok) return;
+                areasService.clearForImportTesting();
+                setTick((t) => t + 1);
+              }}
+            >
+              Zerar áreas (teste CSV)
+            </button>
 
-      <button type="button" className="btn btn--primary" onClick={openNew}>
-      Nova área
-      </button>
-    </div>
-
+            <button type="button" className="btn btn--primary" onClick={openNew}>
+              Nova área
+            </button>
+          </div>
         </div>
 
         <hr className="hr" />
@@ -274,7 +262,7 @@ export function AdminAreasPage() {
               <p>Tente ajustar os filtros.</p>
             </div>
           ) : (
-            filtered.map((a) => (
+            filtered.map((a: AreaPublica) => (
               <div key={a.id} className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div>
@@ -330,7 +318,7 @@ export function AdminAreasPage() {
                       type="button"
                       className="btn"
                       onClick={() => {
-                        setAreaActive(a.id, !a.ativo);
+                        areasService.setActive(a.id, !a.ativo);
                         setTick((t) => t + 1);
                       }}
                     >
@@ -344,7 +332,6 @@ export function AdminAreasPage() {
         </div>
       </div>
 
-      {/* Editor (abaixo da lista) */}
       {editing ? (
         <div style={{ marginTop: 14 }}>
           <div className="card pad">
@@ -501,3 +488,6 @@ export function AdminAreasPage() {
     </div>
   );
 }
+
+
+

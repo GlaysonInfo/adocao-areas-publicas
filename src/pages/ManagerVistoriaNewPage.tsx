@@ -1,4 +1,4 @@
-// src/pages/ManagerVistoriaNewPage.tsx
+﻿// src/pages/ManagerVistoriaNewPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
@@ -7,13 +7,13 @@ import { useForm } from "react-hook-form";
 
 import { useAuth } from "../auth/AuthContext";
 import { getProposalById, subscribeProposals } from "../storage/proposals";
-import { createVistoria } from "../storage/vistorias";
+import { vistoriasService } from "../services/vistorias.service";
 import type { VistoriaChecklist, VistoriaFase } from "../domain/vistoria";
 
 const schema = z.object({
   fase: z.enum(["analise_pre_termo", "execucao_pos_termo"]),
   agendada_para: z.string().min(1, "Informe data/hora do agendamento."),
-  local_texto: z.string().min(3, "Informe a localização (texto)."),
+  local_texto: z.string().min(3, "Informe a localizaÃ§Ã£o (texto)."),
 
   acesso: z.enum(["ok", "pendente", "nao_ok"]),
   iluminacao: z.enum(["ok", "pendente", "nao_ok"]),
@@ -44,7 +44,7 @@ export function ManagerVistoriaNewPage() {
   const [searchParams] = useSearchParams();
   const proposal_id = searchParams.get("proposal_id") ?? "";
 
-  // mantém proposta atualizada
+  // mantÃ©m proposta atualizada
   const [tickP, setTickP] = useState(0);
   useEffect(() => subscribeProposals(() => setTickP((t) => t + 1)), []);
 
@@ -67,10 +67,10 @@ export function ManagerVistoriaNewPage() {
     },
   });
 
-  // se quiser sugerir local usando nome da área:
+  // se quiser sugerir local usando nome da Ã¡rea:
   useEffect(() => {
     if (proposal?.area_nome) {
-      // só preenche se vazio
+      // sÃ³ preenche se vazio
       const cur = String(watch("local_texto") ?? "").trim();
       if (!cur) setValue("local_texto", proposal.area_nome);
     }
@@ -79,13 +79,13 @@ export function ManagerVistoriaNewPage() {
 
   const onSubmit = (values: FormValues) => {
     if (!proposal_id) {
-      alert("proposal_id ausente. Volte e acesse a criação a partir da proposta.");
+      alert("proposal_id ausente. Volte e acesse a criaÃ§Ã£o a partir da proposta.");
       return;
     }
 
     const agIso = toIsoFromDatetimeLocal(values.agendada_para);
     if (!agIso) {
-      alert("Data/hora inválida.");
+      alert("Data/hora invÃ¡lida.");
       return;
     }
 
@@ -99,7 +99,7 @@ export function ManagerVistoriaNewPage() {
     };
 
     try {
-      const v = createVistoria(
+      const v = vistoriasService.create(
         {
           proposal_id,
           fase: values.fase as VistoriaFase,
@@ -107,14 +107,14 @@ export function ManagerVistoriaNewPage() {
           local_texto: String(values.local_texto).trim(),
           checklist,
           observacoes: values.observacoes ? String(values.observacoes) : "",
-          // anexos (metadados) entram pelo detalhe após criar (MVP)
+          // anexos (metadados) entram pelo detalhe apÃ³s criar (MVP)
         },
         role ?? "unknown"
       );
 
       navigate(`/gestor/vistorias/${encodeURIComponent(v.id)}`, { replace: true });
     } catch (e: any) {
-      alert(e?.message ?? "Não foi possível criar a vistoria.");
+      alert(e?.message ?? "NÃ£o foi possÃ­vel criar a vistoria.");
     }
   };
 
@@ -127,7 +127,7 @@ export function ManagerVistoriaNewPage() {
             <p className="page__subtitle">
               {proposal ? (
                 <>
-                  <strong>{proposal.codigo_protocolo}</strong> — {proposal.area_nome}
+                  <strong>{proposal.codigo_protocolo}</strong> â€” {proposal.area_nome}
                 </>
               ) : (
                 "Vincule uma proposta via querystring ?proposal_id=..."
@@ -151,13 +151,13 @@ export function ManagerVistoriaNewPage() {
               <label style={{ fontWeight: 800 }}>
                 Fase
                 <select {...register("fase")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
-                  <option value="analise_pre_termo">Análise (pré-termo)</option>
-                  <option value="execucao_pos_termo">Execução (pós-termo)</option>
+                  <option value="analise_pre_termo">AnÃ¡lise (prÃ©-termo)</option>
+                  <option value="execucao_pos_termo">ExecuÃ§Ã£o (pÃ³s-termo)</option>
                 </select>
               </label>
 
               <label style={{ fontWeight: 800 }}>
-                Agendada para (data/hora) — obrigatório
+                Agendada para (data/hora) â€” obrigatÃ³rio
                 <input
                   type="datetime-local"
                   {...register("agendada_para")}
@@ -168,10 +168,10 @@ export function ManagerVistoriaNewPage() {
             </div>
 
             <label style={{ fontWeight: 800 }}>
-              Localização (texto) — obrigatório
+              LocalizaÃ§Ã£o (texto) â€” obrigatÃ³rio
               <input
                 {...register("local_texto")}
-                placeholder="Ex.: Praça X, Av. Y, próximo a..."
+                placeholder="Ex.: PraÃ§a X, Av. Y, prÃ³ximo a..."
                 style={{ width: "100%", marginTop: 6, padding: 10, borderRadius: 12, border: "1px solid var(--border)" }}
               />
               {errors.local_texto ? <div style={{ color: "crimson" }}>{errors.local_texto.message}</div> : null}
@@ -186,16 +186,16 @@ export function ManagerVistoriaNewPage() {
                   <select {...register("acesso")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">Não OK</option>
+                    <option value="nao_ok">NÃ£o OK</option>
                   </select>
                 </label>
 
                 <label style={{ fontWeight: 800 }}>
-                  Iluminação
+                  IluminaÃ§Ã£o
                   <select {...register("iluminacao")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">Não OK</option>
+                    <option value="nao_ok">NÃ£o OK</option>
                   </select>
                 </label>
 
@@ -204,16 +204,16 @@ export function ManagerVistoriaNewPage() {
                   <select {...register("limpeza")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">Não OK</option>
+                    <option value="nao_ok">NÃ£o OK</option>
                   </select>
                 </label>
 
                 <label style={{ fontWeight: 800 }}>
-                  Sinalização
+                  SinalizaÃ§Ã£o
                   <select {...register("sinalizacao")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">Não OK</option>
+                    <option value="nao_ok">NÃ£o OK</option>
                   </select>
                 </label>
 
@@ -221,20 +221,20 @@ export function ManagerVistoriaNewPage() {
                   Risco
                   <select {...register("risco")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="baixo">Baixo</option>
-                    <option value="medio">Médio</option>
+                    <option value="medio">MÃ©dio</option>
                     <option value="alto">Alto</option>
                   </select>
                 </label>
               </div>
 
               <label style={{ fontWeight: 800, marginTop: 10, display: "block" }}>
-                Observações do checklist (opcional)
+                ObservaÃ§Ãµes do checklist (opcional)
                 <textarea {...register("checklist_obs")} rows={4} style={{ width: "100%", marginTop: 6 }} />
               </label>
             </div>
 
             <label style={{ fontWeight: 800 }}>
-              Observações gerais (opcional)
+              ObservaÃ§Ãµes gerais (opcional)
               <textarea {...register("observacoes")} rows={4} style={{ width: "100%", marginTop: 6 }} />
             </label>
 
@@ -248,7 +248,7 @@ export function ManagerVistoriaNewPage() {
             </div>
 
             <div className="muted">
-              Anexos e laudo são adicionados no <strong>detalhe</strong> da vistoria (após criar), para manter o fluxo “agendada → realizada → laudo_emitido”.
+              Anexos e laudo sÃ£o adicionados no <strong>detalhe</strong> da vistoria (apÃ³s criar), para manter o fluxo â€œagendada â†’ realizada â†’ laudo_emitidoâ€.
             </div>
           </form>
         </div>
@@ -256,3 +256,4 @@ export function ManagerVistoriaNewPage() {
     </div>
   );
 }
+

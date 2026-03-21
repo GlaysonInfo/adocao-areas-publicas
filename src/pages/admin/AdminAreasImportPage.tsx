@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AreaStatus } from "../../domain/area";
-import { importAreasFromCSV, listAreas, type ImportReport } from "../../storage/areas";
+import { areasService, type ImportReport } from "../../services";
 
 type ParseResult = {
   headers: string[];
@@ -179,7 +179,7 @@ export function AdminAreasImportPage() {
   const [busy, setBusy] = useState(false);
 
   const parsed = useMemo(() => (csvText ? parseCSV(csvText) : null), [csvText]);
-  const existingCodes = useMemo(() => new Set(listAreas().map((a) => a.codigo)), []);
+  const existingCodes = useMemo(() => new Set(areasService.listAll().map((a) => a.codigo)), []);
 
   const requiredHeaders = ["codigo", "nome", "tipo", "bairro", "logradouro", "metragem_m2", "status"];
 
@@ -310,7 +310,7 @@ export function AdminAreasImportPage() {
 
     setBusy(true);
     try {
-      const rep = importAreasFromCSV(csvText);
+      const rep = areasService.importFromCSV(csvText);
       setReport(rep);
     } finally {
       setBusy(false);
@@ -550,3 +550,9 @@ export function AdminAreasImportPage() {
     </div>
   );
 }
+
+
+
+
+
+

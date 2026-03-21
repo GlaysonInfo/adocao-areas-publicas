@@ -1,9 +1,8 @@
 ﻿// src/pages/ManagerKanbanPage.tsx
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { KanbanColuna } from "../domain/proposal";
-import { getAllowedTransitionsFrom, requiresNoteForProposalTransition } from "../domain/transitions";
-import { listProposals, moveProposal } from "../storage/proposals";
+import type { KanbanColuna, PropostaAdocao } from "../domain/proposal";
+import { proposalsService } from "../services";
 import { useAuth } from "../auth/AuthContext";
 
 type Action = { label: string; to: KanbanColuna };
@@ -17,27 +16,47 @@ const columns: { key: KanbanColuna; label: string }[] = [
   { key: "termo_assinado", label: "Termo Assinado" },
 ];
 
-const TRANSITION_LABELS: Partial<Record<string, string>> = {
-  "protocolo->analise_semad": "Iniciar análise (SEMAD)",
-  "analise_semad->analise_ecos": "Encaminhar p/ ECOS",
-  "analise_semad->ajustes": "Solicitar ajustes",
-  "analise_ecos->decisao": "Encaminhar p/ decisão",
-  "analise_ecos->ajustes": "Solicitar ajustes",
-  "ajustes->analise_semad": "Retomar análise (SEMAD)",
-  "decisao->termo_assinado": "Aprovar (termo assinado)",
-  "decisao->indeferida": "Indeferir",
-  "decisao->ajustes": "Solicitar ajustes",
-};
-
 function actionsFor(role: string | null, col: KanbanColuna): Action[] {
-  return getAllowedTransitionsFrom(col, role).map((rule) => ({
-    to: rule.to,
-    label: TRANSITION_LABELS[`${rule.from}->${rule.to}`] ?? `Mover para ${rule.to}`,
-  }));
+  const is_admin = role === "administrador";
+  const is_semad = role === "gestor_semad";
+  const is_ecos = role === "gestor_ecos";
+  const is_gov = role === "gestor_governo";
+
+  if (col === "protocolo" && (is_admin || is_semad)) {
+    return [{ label: "Iniciar análise (SEMAD)", to: "analise_semad" }];
+  }
+
+  if (col === "analise_semad" && (is_admin || is_semad)) {
+    return [
+      { label: "Encaminhar p/ ECOS", to: "analise_ecos" },
+      { label: "Solicitar ajustes", to: "ajustes" },
+    ];
+  }
+
+  if (col === "analise_ecos" && (is_admin || is_ecos)) {
+    return [
+      { label: "Encaminhar p/ decisão", to: "decisao" },
+      { label: "Solicitar ajustes", to: "ajustes" },
+    ];
+  }
+
+  if (col === "ajustes" && (is_admin || is_semad || is_ecos)) {
+    return [{ label: "Retomar análise (SEMAD)", to: "analise_semad" }];
+  }
+
+  if (col === "decisao" && (is_admin || is_gov)) {
+    return [
+      { label: "Aprovar (termo assinado)", to: "termo_assinado" },
+      { label: "Solicitar ajustes", to: "ajustes" },
+    ];
+  }
+
+  return [];
 }
 
 function canMove(role: string | null, from: KanbanColuna, to: KanbanColuna) {
-  return getAllowedTransitionsFrom(from, role).some((a) => a.to === to);
+  if (from === to) return true;
+  return actionsFor(role, from).some((a) => a.to === to);
 }
 
 function packDrag(id: string, from: KanbanColuna) {
@@ -50,20 +69,11 @@ function unpackDrag(payload: string): { id: string; from: KanbanColuna } | null 
   return { id, from: from as KanbanColuna };
 }
 
-function askRequiredNote(from: KanbanColuna, to: KanbanColuna): string | null {
-  const requires = requiresNoteForProposalTransition(from, to);
-  if (!requires) return "";
-
-  const isAjustes = to === "ajustes";
-  const isIndeferida = to === "indeferida";
-
-  const message = isAjustes
-    ? "Explique detalhadamente o motivo da solicitação de ajustes (esta mensagem será exibida ao adotante):"
-    : isIndeferida
-      ? "Informe a justificativa do indeferimento:"
-      : "Informe a justificativa desta transição:";
-
-  const txt = window.prompt(message, "");
+function askAjustesNote(): string | null {
+  const txt = window.prompt(
+    "Explique detalhadamente o motivo da solicitação de ajustes (esta mensagem será exibida ao adotante):",
+    ""
+  );
   if (txt == null) return null;
   const t = txt.trim();
   if (!t) return null;
@@ -75,10 +85,10 @@ export function ManagerKanbanPage() {
   const [tick, setTick] = useState(0);
   const [dragOverCol, setDragOverCol] = useState<KanbanColuna | null>(null);
 
-  const items = useMemo(() => listProposals(), [tick]);
+  const items = useMemo<PropostaAdocao[]>(() => proposalsService.listAll(), [tick]);
 
   const grouped = useMemo(() => {
-    const map = new Map<KanbanColuna, typeof items>();
+    const map = new Map<KanbanColuna, PropostaAdocao[]>();
     for (const c of columns) map.set(c.key, []);
     for (const p of items) {
       const key = p.kanban_coluna as KanbanColuna;
@@ -96,14 +106,14 @@ export function ManagerKanbanPage() {
 
     let note: string | undefined;
 
-    if (requiresNoteForProposalTransition(from, to)) {
-      const txt = askRequiredNote(from, to);
-      if (txt == null) return;
+    if (to === "ajustes") {
+      const txt = askAjustesNote();
+      if (!txt) return;
       note = txt;
     }
 
     try {
-      moveProposal(id, to, role ?? "gestor", note);
+      proposalsService.move(id, to, role ?? "gestor", note);
       setTick((x) => x + 1);
     } catch (e: any) {
       alert(e?.message ?? "Erro ao mover proposta.");
@@ -153,7 +163,7 @@ export function ManagerKanbanPage() {
                     {colItems.length === 0 ? (
                       <div className="kanbanEmpty">Sem itens</div>
                     ) : (
-                      colItems.map((p) => {
+                      colItems.map((p: PropostaAdocao) => {
                         const fromCol = p.kanban_coluna as KanbanColuna;
                         const acts = actionsFor(role, fromCol);
 
@@ -201,3 +211,5 @@ export function ManagerKanbanPage() {
     </div>
   );
 }
+
+

@@ -1,12 +1,7 @@
 ﻿// src/pages/reports/ReportsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import type { KanbanColuna } from "../../domain/proposal";
-import {
-  computeConsolidatedByPeriod,
-  computeSemadProductivity,
-  listProposals,
-  subscribeProposals,
-} from "../../storage/proposals";
+import { proposalsService } from "../../services";
 import { useAuth } from "../../auth/AuthContext";
 
 // âœ… SolicitaÃ§Ãµes de Ã¡rea
@@ -143,7 +138,7 @@ function firstCreateInPeriod(p: any, fromD: Date | null, toD: Date | null) {
   const hist: any[] = (p?.history ?? p?.historico ?? []) as any[];
   const created = hist
     .filter((h) => normEventType(h) === "create" && inRange(normAt(h), fromD, toD))
-    .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
+    .sort((a: any, b: any) => String(normAt(a)).localeCompare(String(normAt(b))));
   if (created.length === 0) return null;
   return { at: normAt(created[0]), actor: normActor(created[0]) };
 }
@@ -153,7 +148,7 @@ function lastAdjustmentsInPeriod(p: any, fromD: Date | null, toD: Date | null) {
 
   const req = hist
     .filter((h) => normEventType(h) === "request_adjustments" && inRange(normAt(h), fromD, toD))
-    .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
+    .sort((a: any, b: any) => String(normAt(a)).localeCompare(String(normAt(b))));
   if (req.length > 0) {
     const last = req[req.length - 1];
     return { actor: normActor(last), at: normAt(last), note: normNote(last) };
@@ -161,7 +156,7 @@ function lastAdjustmentsInPeriod(p: any, fromD: Date | null, toD: Date | null) {
 
   const moves = hist
     .filter((h) => normEventType(h) === "move" && normTo(h) === "ajustes" && inRange(normAt(h), fromD, toD))
-    .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
+    .sort((a: any, b: any) => String(normAt(a)).localeCompare(String(normAt(b))));
   if (moves.length === 0) return null;
 
   const last = moves[moves.length - 1];
@@ -177,7 +172,7 @@ function lastOtherOrgEntryInPeriod(p: any, fromD: Date | null, toD: Date | null)
         ["analise_ecos", "decisao"].includes(normTo(h)) &&
         inRange(normAt(h), fromD, toD)
     )
-    .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
+    .sort((a: any, b: any) => String(normAt(a)).localeCompare(String(normAt(b))));
   if (entries.length === 0) return null;
   const last = entries[entries.length - 1];
   return { at: normAt(last), actor: normActor(last), to: normTo(last) as KanbanColuna };
@@ -193,7 +188,7 @@ function lastTermSignedInPeriod(p: any, fromD: Date | null, toD: Date | null) {
         (normDecision(h) === "approved" || normDecision(h) === "aprovada" || normDecision(h) === "aprovado") &&
         inRange(normAt(h), fromD, toD)
     )
-    .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
+    .sort((a: any, b: any) => String(normAt(a)).localeCompare(String(normAt(b))));
   if (dec.length > 0) {
     const last = dec[dec.length - 1];
     return { at: normAt(last), actor: normActor(last) };
@@ -201,7 +196,7 @@ function lastTermSignedInPeriod(p: any, fromD: Date | null, toD: Date | null) {
 
   const moves = hist
     .filter((h) => normEventType(h) === "move" && normTo(h) === "termo_assinado" && inRange(normAt(h), fromD, toD))
-    .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
+    .sort((a: any, b: any) => String(normAt(a)).localeCompare(String(normAt(b))));
   if (moves.length === 0) return null;
   const last = moves[moves.length - 1];
   return { at: normAt(last), actor: normActor(last) };
@@ -251,7 +246,7 @@ function extractOverrideRows(proposals: any[], fromD: Date | null, toD: Date | n
     }
   }
 
-  rows.sort((a, b) => String(b.at).localeCompare(String(a.at))); // mais recentes primeiro
+  rows.sort((a: any, b: any) => String(b.at).localeCompare(String(a.at))); // mais recentes primeiro
   return rows;
 }
 
@@ -272,7 +267,7 @@ function computeSlaDetails(all: any[], fromD: Date | null, toD: Date | null) {
     const hist: any[] = (p?.history ?? p?.historico ?? []) as any[];
     const moves = hist
       .filter((h) => normEventType(h) === "move" && normAt(h) && normTo(h))
-      .sort((a, b) => String(normAt(a)).localeCompare(String(normAt(b))));
+      .sort((a: any, b: any) => String(normAt(a)).localeCompare(String(normAt(b))));
 
     let curCol: KanbanColuna = "protocolo";
     let curAtMs = Math.max(createdAt, fromMs);
@@ -296,7 +291,7 @@ function computeSlaDetails(all: any[], fromD: Date | null, toD: Date | null) {
 
   const pct = (arr: number[], p: number) => {
     if (arr.length === 0) return null;
-    const sorted = [...arr].sort((a, b) => a - b);
+    const sorted = [...arr].sort((a: any, b: any) => a - b);
     const idx = Math.min(sorted.length - 1, Math.max(0, Math.floor(p * (sorted.length - 1))));
     return sorted[idx];
   };
@@ -356,7 +351,7 @@ function computeAreaRequestsConsolidated(requests: any[], fromD: Date | null, to
   const responseDur: number[] = [];
 
   for (const r of requests) {
-    const evs = getReqEvents(r).slice().sort((a, b) => String(reqEventAt(a)).localeCompare(String(reqEventAt(b))));
+    const evs = getReqEvents(r).slice().sort((a: any, b: any) => String(reqEventAt(a)).localeCompare(String(reqEventAt(b))));
     const evsIn = evs.filter((e) => inRange(reqEventAt(e), fromD, toD));
 
     start_verification += evsIn.filter((e) => reqEventType(e) === "start_verification").length;
@@ -432,7 +427,7 @@ function computeVistoriasConsolidated(vistorias: any[], fromD: Date | null, toD:
   const durRealizadaLaudo: number[] = [];
 
   for (const v of vistorias) {
-    const evs = vistEvents(v).slice().sort((a, b) => String(vistAt(a)).localeCompare(String(vistAt(b))));
+    const evs = vistEvents(v).slice().sort((a: any, b: any) => String(vistAt(a)).localeCompare(String(vistAt(b))));
     const evsIn = evs.filter((e) => inRange(vistAt(e), fromD, toD));
 
     status_changes += evsIn.filter((e) => vistType(e) === "status_change").length;
@@ -490,7 +485,7 @@ export function ReportsPage() {
   const [tickR, setTickR] = useState(0);
   const [tickV, setTickV] = useState(0);
 
-  useEffect(() => subscribeProposals(() => setTickP((t) => t + 1)), []);
+  useEffect(() => proposalsService.subscribe(() => setTickP((t) => t + 1)), []);
   useEffect(() => subscribeAreaRequests(() => setTickR((t) => t + 1)), []);
   useEffect(() => subscribeVistorias(() => setTickV((t) => t + 1)), []);
 
@@ -500,7 +495,7 @@ export function ReportsPage() {
   const fromIso = useMemo(() => (fromD ? fromD.toISOString() : ""), [fromD]);
   const toIso = useMemo(() => (toD ? toD.toISOString() : ""), [toD]);
 
-  const proposals = useMemo(() => listProposals(), [tickP]);
+  const proposals = useMemo(() => proposalsService.listAll(), [tickP]);
   const areaRequests = useMemo(() => listAreaRequests(), [tickR]);
   const vistorias = useMemo(() => listVistorias(), [tickV]);
 
@@ -517,12 +512,12 @@ export function ReportsPage() {
         rejected: 0,
       };
     }
-    return computeConsolidatedByPeriod(fromIso, toIso);
+    return proposalsService.computeConsolidated(fromIso, toIso);
   }, [fromIso, toIso, tickP]);
 
   const semadProd = useMemo(() => {
     if (!fromIso || !toIso) return null;
-    return computeSemadProductivity(fromIso, toIso);
+    return proposalsService.computeSemadProductivity(fromIso, toIso);
   }, [fromIso, toIso, tickP]);
 
   // ===== Overrides (event-log) =====
@@ -534,8 +529,8 @@ export function ReportsPage() {
   const rowsProtocolos = useMemo(() => {
     if (!fromD || !toD) return [];
     return proposals
-      .filter((p) => !!firstCreateInPeriod(p, fromD, toD))
-      .sort((a, b) =>
+      .filter((p: any) => !!firstCreateInPeriod(p, fromD, toD))
+      .sort((a: any, b: any) =>
         String(firstCreateInPeriod(a, fromD, toD)?.at ?? "").localeCompare(
           String(firstCreateInPeriod(b, fromD, toD)?.at ?? "")
         )
@@ -545,8 +540,8 @@ export function ReportsPage() {
   const rowsAjustes = useMemo(() => {
     if (!fromD || !toD) return [];
     return proposals
-      .filter((p) => !!lastAdjustmentsInPeriod(p, fromD, toD))
-      .sort((a, b) =>
+      .filter((p: any) => !!lastAdjustmentsInPeriod(p, fromD, toD))
+      .sort((a: any, b: any) =>
         String(lastAdjustmentsInPeriod(b, fromD, toD)?.at ?? "").localeCompare(
           String(lastAdjustmentsInPeriod(a, fromD, toD)?.at ?? "")
         )
@@ -556,8 +551,8 @@ export function ReportsPage() {
   const rowsTermos = useMemo(() => {
     if (!fromD || !toD) return [];
     return proposals
-      .filter((p) => !!lastTermSignedInPeriod(p, fromD, toD))
-      .sort((a, b) =>
+      .filter((p: any) => !!lastTermSignedInPeriod(p, fromD, toD))
+      .sort((a: any, b: any) =>
         String(lastTermSignedInPeriod(b, fromD, toD)?.at ?? "").localeCompare(
           String(lastTermSignedInPeriod(a, fromD, toD)?.at ?? "")
         )
@@ -567,8 +562,8 @@ export function ReportsPage() {
   const rowsEmOutros = useMemo(() => {
     if (!fromD || !toD) return [];
     return proposals
-      .filter((p) => !!lastOtherOrgEntryInPeriod(p, fromD, toD))
-      .sort((a, b) =>
+      .filter((p: any) => !!lastOtherOrgEntryInPeriod(p, fromD, toD))
+      .sort((a: any, b: any) =>
         String(lastOtherOrgEntryInPeriod(b, fromD, toD)?.at ?? "").localeCompare(
           String(lastOtherOrgEntryInPeriod(a, fromD, toD)?.at ?? "")
         )
@@ -1364,4 +1359,10 @@ export function ReportsPage() {
     </div>
   );
 }
+
+
+
+
+
+
 

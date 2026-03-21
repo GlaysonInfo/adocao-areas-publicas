@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { getProposalById, subscribeProposals } from "../storage/proposals";
-import { listVistoriasByProposal, subscribeVistorias } from "../storage/vistorias";
+import { proposalsService, vistoriasService } from "../services";
 
 function fmtBR(iso?: string | null) {
   if (!iso) return "—";
@@ -17,17 +16,16 @@ export function MyProposalDetailPage() {
   const navigate = useNavigate();
 
   const [tick, setTick] = useState(0);
-  useEffect(() => subscribeProposals(() => setTick((t) => t + 1)), []);
+  useEffect(() => proposalsService.subscribe(() => setTick((t) => t + 1)), []);
 
-  const p = useMemo(() => (id ? getProposalById(id) : null), [id, tick]);
+  const p = useMemo(() => (id ? proposalsService.getById(id) : null), [id, tick]);
 
-  // vistorias
   const [tickV, setTickV] = useState(0);
-  useEffect(() => subscribeVistorias(() => setTickV((t) => t + 1)), []);
+  useEffect(() => vistoriasService.subscribe(() => setTickV((t) => t + 1)), []);
 
   const vistorias = useMemo(() => {
     if (!p?.id) return [];
-    return listVistoriasByProposal(p.id);
+    return vistoriasService.listByProposal(p.id);
   }, [p?.id, tickV]);
 
   if (!p) {
@@ -43,7 +41,6 @@ export function MyProposalDetailPage() {
     );
   }
 
-  // compat histórico ajustes (novo + legado)
   const lastAdjust = useMemo(() => {
     const hist = Array.isArray(p.history) ? [...p.history] : [];
     const candidates = hist.filter((e: any) => {
@@ -150,7 +147,6 @@ export function MyProposalDetailPage() {
           </section>
         </div>
 
-        {/* ✅ DEVOLUTIVA — Vistorias */}
         <div className="card pad" style={{ marginTop: 12 }}>
           <h2 className="h2">Vistorias</h2>
 
@@ -217,3 +213,8 @@ export function MyProposalDetailPage() {
     </div>
   );
 }
+
+
+
+
+

@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { listMyProposals, subscribeProposals } from "../storage/proposals";
+import { proposalsService } from "../services";
 
 export function MyProposalsPage() {
   const { role } = useAuth();
   const [tick, setTick] = useState(0);
 
-  useEffect(() => subscribeProposals(() => setTick((t) => t + 1)), []);
+  useEffect(() => proposalsService.subscribe(() => setTick((t) => t + 1)), []);
 
-  const items = useMemo(() => listMyProposals(role), [role, tick]);
+  const items = useMemo(() => proposalsService.listMine(role), [role, tick]);
 
   return (
     <div className="container">
@@ -53,7 +53,6 @@ export function MyProposalsPage() {
           <div className="list">
             {items.map((p) => (
               <article key={p.id} className="card pad item">
-                {/* ✅ Linha: texto à esquerda e ações à direita, sem sobrepor */}
                 <div className="proposalRow">
                   <div className="proposalRow__main">
                     <h3 className="item__title">{p.codigo_protocolo}</h3>
@@ -80,3 +79,5 @@ export function MyProposalsPage() {
     </div>
   );
 }
+
+

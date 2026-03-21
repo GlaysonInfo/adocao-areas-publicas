@@ -1,23 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-import { decideAreaRequest, getAreaRequestById, setAreaDraft, startVerification, subscribeAreaRequests, updateSisGeo } from "../storage/area_requests";
+import { areaRequestsService } from "../services/areaRequests.service";
 import type { SisGeoResultado } from "../domain/area_request";
 
 const LABEL: Record<string, string> = {
   solicitada: "Solicitada",
-  em_verificacao: "Em verificação",
+  em_verificacao: "Em verificaÃ§Ã£o",
   aprovada: "Aprovada",
   indeferida: "Indeferida",
 };
 
 const SISGEO_OPTIONS: { value: SisGeoResultado; label: string }[] = [
-  { value: "publica_disponivel", label: "Pública e disponível" },
-  { value: "publica_indisponivel", label: "Pública e indisponível" },
-  { value: "nao_publica", label: "Não é pública" },
-  { value: "nao_encontrada", label: "Não encontrada no SisGeo" },
-  { value: "uso_incompativel", label: "Uso pretendido incompatível" },
+  { value: "publica_disponivel", label: "PÃºblica e disponÃ­vel" },
+  { value: "publica_indisponivel", label: "PÃºblica e indisponÃ­vel" },
+  { value: "nao_publica", label: "NÃ£o Ã© pÃºblica" },
+  { value: "nao_encontrada", label: "NÃ£o encontrada no SisGeo" },
+  { value: "uso_incompativel", label: "Uso pretendido incompatÃ­vel" },
 ];
 
 function num(v: any) {
@@ -31,9 +31,9 @@ export function ManagerAreaRequestDetailPage() {
   const navigate = useNavigate();
 
   const [tick, setTick] = useState(0);
-  useEffect(() => subscribeAreaRequests(() => setTick((t) => t + 1)), []);
+  useEffect(() => areaRequestsService.subscribe(() => setTick((t) => t + 1)), []);
 
-  const r = useMemo(() => (id ? getAreaRequestById(id) : null), [id, tick]);
+  const r = useMemo(() => (id ? areaRequestsService.getById(id) : null), [id, tick]);
 
   const can_view = role === "administrador" || role === "gestor_semad";
 
@@ -43,9 +43,9 @@ export function ManagerAreaRequestDetailPage() {
 
   const [area_codigo, setAreaCodigo] = useState("");
   const [area_nome, setAreaNome] = useState("");
-  const [area_tipo, setAreaTipo] = useState("—");
-  const [area_bairro, setAreaBairro] = useState("—");
-  const [area_logradouro, setAreaLogradouro] = useState("—");
+  const [area_tipo, setAreaTipo] = useState("â€”");
+  const [area_bairro, setAreaBairro] = useState("â€”");
+  const [area_logradouro, setAreaLogradouro] = useState("â€”");
   const [area_metragem, setAreaMetragem] = useState<number>(0);
 
   useEffect(() => {
@@ -65,10 +65,10 @@ export function ManagerAreaRequestDetailPage() {
     } else {
       const fallbackCode = `AREA-${String(r.codigo_protocolo ?? "").replaceAll("-", "")}`;
       setAreaCodigo(fallbackCode.slice(0, 24));
-      setAreaNome(`Área solicitada (${r.codigo_protocolo})`);
-      setAreaTipo("—");
-      setAreaBairro("—");
-      setAreaLogradouro("—");
+      setAreaNome(`Ãrea solicitada (${r.codigo_protocolo})`);
+      setAreaTipo("â€”");
+      setAreaBairro("â€”");
+      setAreaLogradouro("â€”");
       setAreaMetragem(0);
     }
   }, [r?.id]);
@@ -87,7 +87,7 @@ export function ManagerAreaRequestDetailPage() {
     return (
       <div className="container">
         <div className="page">
-          <div className="card pad">Solicitação não encontrada.</div>
+          <div className="card pad">SolicitaÃ§Ã£o nÃ£o encontrada.</div>
         </div>
       </div>
     );
@@ -98,7 +98,7 @@ export function ManagerAreaRequestDetailPage() {
 
   const saveSisgeo = () => {
     try {
-      updateSisGeo(r.id, { sisgeo_resultado, sisgeo_ref: sisgeo_ref.trim() || undefined, sisgeo_note: sisgeo_note.trim() || undefined }, actor_role);
+      areaRequestsService.updateSisGeo(r.id, { sisgeo_resultado, sisgeo_ref: sisgeo_ref.trim() || undefined, sisgeo_note: sisgeo_note.trim() || undefined }, actor_role);
       alert("SisGeo atualizado.");
     } catch (e: any) {
       alert(e?.message ?? "Erro ao atualizar SisGeo.");
@@ -107,7 +107,7 @@ export function ManagerAreaRequestDetailPage() {
 
   const saveAreaDraft = () => {
     try {
-      setAreaDraft(r.id, {
+      areaRequestsService.setAreaDraft(r.id, {
         codigo: area_codigo.trim(),
         nome: area_nome.trim(),
         tipo: area_tipo.trim(),
@@ -115,7 +115,7 @@ export function ManagerAreaRequestDetailPage() {
         logradouro: area_logradouro.trim(),
         metragem_m2: num(area_metragem),
       });
-      alert("Cadastro da área (rascunho) salvo.");
+      alert("Cadastro da Ã¡rea (rascunho) salvo.");
     } catch (e: any) {
       alert(e?.message ?? "Erro ao salvar rascunho.");
     }
@@ -123,20 +123,20 @@ export function ManagerAreaRequestDetailPage() {
 
   const doStartVerification = () => {
     try {
-      startVerification(r.id, actor_role);
+      areaRequestsService.startVerification(r.id, actor_role);
     } catch (e: any) {
-      alert(e?.message ?? "Erro ao iniciar verificação.");
+      alert(e?.message ?? "Erro ao iniciar verificaÃ§Ã£o.");
     }
   };
 
   const doReject = () => {
-    const note = window.prompt("Motivo do indeferimento (será exibido ao adotante):", "");
+    const note = window.prompt("Motivo do indeferimento (serÃ¡ exibido ao adotante):", "");
     if (note == null) return;
     const t = note.trim();
     if (!t) return;
 
     try {
-      decideAreaRequest(r.id, { decision: "rejected", decision_note: t }, actor_role);
+      areaRequestsService.decide(r.id, { decision: "rejected", decision_note: t }, actor_role);
       navigate("/gestor/solicitacoes-area", { replace: true });
     } catch (e: any) {
       alert(e?.message ?? "Erro ao indeferir.");
@@ -145,11 +145,11 @@ export function ManagerAreaRequestDetailPage() {
 
   const doApprove = () => {
     try {
-      const next = decideAreaRequest(
+      const next = areaRequestsService.decide(
         r.id,
         {
           decision: "approved",
-          decision_note: "Aprovada após verificação SisGeo.",
+          decision_note: "Aprovada apÃ³s verificaÃ§Ã£o SisGeo.",
           area_draft: {
             codigo: area_codigo.trim(),
             nome: area_nome.trim(),
@@ -177,7 +177,7 @@ export function ManagerAreaRequestDetailPage() {
       <div className="page">
         <header className="page__header">
           <div className="page__titlewrap">
-            <h1 className="page__title">Solicitação {r.codigo_protocolo}</h1>
+            <h1 className="page__title">SolicitaÃ§Ã£o {r.codigo_protocolo}</h1>
             <p className="page__subtitle">{LABEL[r.status] ?? r.status}</p>
           </div>
 
@@ -192,21 +192,21 @@ export function ManagerAreaRequestDetailPage() {
         </header>
 
         <div className="card pad" style={{ display: "grid", gap: 12 }}>
-          <div><strong>Localização:</strong> <span className="muted">{r.localizacao_descritiva}</span></div>
+          <div><strong>LocalizaÃ§Ã£o:</strong> <span className="muted">{r.localizacao_descritiva}</span></div>
           {r.geo ? (
-            <div className="muted">Coordenadas: lat={r.geo.lat} lng={r.geo.lng} (≈{r.geo.accuracy_m ?? "—"}m) em {r.geo.captured_at}</div>
+            <div className="muted">Coordenadas: lat={r.geo.lat} lng={r.geo.lng} (â‰ˆ{r.geo.accuracy_m ?? "â€”"}m) em {r.geo.captured_at}</div>
           ) : (
             <div className="muted">Sem coordenadas.</div>
           )}
           <div>
-            <strong>Intervenção:</strong>
+            <strong>IntervenÃ§Ã£o:</strong>
             <div className="muted">{r.descricao_intervencao}</div>
           </div>
 
           {!is_closed && r.status === "solicitada" ? (
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button className="btn btn--subtle" type="button" onClick={doStartVerification}>
-                Iniciar verificação
+                Iniciar verificaÃ§Ã£o
               </button>
             </div>
           ) : null}
@@ -214,7 +214,7 @@ export function ManagerAreaRequestDetailPage() {
 
         <div className="grid" style={{ gap: 12, marginTop: 12 }}>
           <div className="card pad" style={{ display: "grid", gap: 10 }}>
-            <h2 className="h2">Verificação SisGeo</h2>
+            <h2 className="h2">VerificaÃ§Ã£o SisGeo</h2>
 
             <label>
               Resultado
@@ -226,12 +226,12 @@ export function ManagerAreaRequestDetailPage() {
             </label>
 
             <label>
-              Referência SisGeo (opcional)
+              ReferÃªncia SisGeo (opcional)
               <input className="input" value={sisgeo_ref} onChange={(e) => setSisgeoRef(e.target.value)} disabled={is_closed} />
             </label>
 
             <label>
-              Observação (opcional)
+              ObservaÃ§Ã£o (opcional)
               <textarea className="input" rows={3} value={sisgeo_note} onChange={(e) => setSisgeoNote(e.target.value)} disabled={is_closed} />
             </label>
 
@@ -243,9 +243,9 @@ export function ManagerAreaRequestDetailPage() {
           </div>
 
           <div className="card pad" style={{ display: "grid", gap: 10 }}>
-            <h2 className="h2">Cadastro da área (para aprovação)</h2>
+            <h2 className="h2">Cadastro da Ã¡rea (para aprovaÃ§Ã£o)</h2>
 
-            <label>Código da área
+            <label>CÃ³digo da Ã¡rea
               <input className="input" value={area_codigo} onChange={(e) => setAreaCodigo(e.target.value)} disabled={is_closed} />
             </label>
             <label>Nome
@@ -260,7 +260,7 @@ export function ManagerAreaRequestDetailPage() {
             <label>Logradouro
               <input className="input" value={area_logradouro} onChange={(e) => setAreaLogradouro(e.target.value)} disabled={is_closed} />
             </label>
-            <label>Metragem (m²)
+            <label>Metragem (mÂ²)
               <input className="input" inputMode="decimal" value={String(area_metragem)} onChange={(e) => setAreaMetragem(num(e.target.value))} disabled={is_closed} />
             </label>
 
@@ -270,7 +270,7 @@ export function ManagerAreaRequestDetailPage() {
               </button>
 
               <button className="btn btn--primary" type="button" onClick={doApprove} disabled={is_closed}>
-                Aprovar (cadastra área + gera proposta)
+                Aprovar (cadastra Ã¡rea + gera proposta)
               </button>
 
               <button className="btn" type="button" onClick={doReject} disabled={is_closed}>
@@ -281,13 +281,13 @@ export function ManagerAreaRequestDetailPage() {
         </div>
 
         <div className="card pad" style={{ marginTop: 12 }}>
-          <h2 className="h2">Histórico</h2>
+          <h2 className="h2">HistÃ³rico</h2>
           {r.history?.length ? (
             <ul className="list">
               {r.history.map((e) => (
                 <li key={e.id}>
-                  <strong>{e.at}</strong> — <strong>{e.actor_role}</strong> — {e.type}
-                  {"decision" in e ? ((e as any).decision_note ? ` — ${(e as any).decision_note}` : "") : ""}
+                  <strong>{e.at}</strong> â€” <strong>{e.actor_role}</strong> â€” {e.type}
+                  {"decision" in e ? ((e as any).decision_note ? ` â€” ${(e as any).decision_note}` : "") : ""}
                 </li>
               ))}
             </ul>
@@ -299,3 +299,4 @@ export function ManagerAreaRequestDetailPage() {
     </div>
   );
 }
+

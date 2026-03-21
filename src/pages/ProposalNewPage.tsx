@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,8 +6,7 @@ import { useForm } from "react-hook-form";
 
 import type { AreaPublica } from "../domain/area";
 import type { DocumentoMeta, DocumentoTipo, PropostaAdocao } from "../domain/proposal";
-import { listAreasPublic, subscribeAreas } from "../storage/areas";
-import { createProposal } from "../storage/proposals";
+import { areasService, proposalsService } from "../services";
 import { useAuth } from "../auth/AuthContext";
 import { next_protocol as nextProtocol } from "../storage/protocol";
 
@@ -44,10 +43,10 @@ export function ProposalNewPage() {
   const [tick, setTick] = useState(0);
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  useEffect(() => subscribeAreas(() => setTick((t) => t + 1)), []);
+  useEffect(() => areasService.subscribe(() => setTick((t) => t + 1)), []);
 
   const areas_disponiveis = useMemo(() => {
-    return listAreasPublic().filter((a) => a.status === "disponivel" && a.ativo !== false);
+    return areasService.listPublic().filter((a) => a.status === "disponivel" && a.ativo !== false);
   }, [tick]);
 
   const preselectedArea = useMemo<AreaPublica | null>(() => {
@@ -123,7 +122,7 @@ export function ProposalNewPage() {
     };
 
     try {
-      createProposal(proposta, actor_role);
+      proposalsService.create(proposta, actor_role);
       navigate(`/minhas-propostas/${encodeURIComponent(proposta_id)}`, { replace: true });
     } catch (e: any) {
       alert(e?.message ?? "Não foi possível criar a proposta.");
@@ -254,3 +253,6 @@ export function ProposalNewPage() {
     </div>
   );
 }
+
+
+

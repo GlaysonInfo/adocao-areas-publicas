@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { subscribeVistorias, listVistorias } from "../storage/vistorias";
+import { vistoriasService } from "../services/vistorias.service";
 
 function stripAccents(s: string) {
   return String(s ?? "")
@@ -17,7 +17,7 @@ function includesSmart(hay: string, needle: string) {
 }
 
 function fmtBR(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "â€”";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
   return d.toLocaleString("pt-BR");
@@ -29,10 +29,10 @@ export function ManagerVistoriasPage() {
 
   // tick de storage
   const [tick, setTick] = useState(0);
-  useEffect(() => subscribeVistorias(() => setTick((t) => t + 1)), []);
+  useEffect(() => vistoriasService.subscribe(() => setTick((t) => t + 1)), []);
 
   // dados (fonte: storage/localStorage)
-  const all = useMemo(() => listVistorias(), [tick]);
+  const all = useMemo(() => vistoriasService.listAll(), [tick]);
 
   // estado dos filtros (inicial vindo da URL)
   const [proposalId, setProposalId] = useState<string>(sp.get("proposal_id") ?? "");
@@ -40,7 +40,7 @@ export function ManagerVistoriasPage() {
   const [status, setStatus] = useState<string>(sp.get("status") ?? "");
   const [q, setQ] = useState<string>(sp.get("q") ?? "");
 
-  // opções dinâmicas (derivadas do localStorage)
+  // opÃ§Ãµes dinÃ¢micas (derivadas do localStorage)
   const fases = useMemo(() => {
     const set = new Set<string>();
     for (const v of all as any[]) {
@@ -59,7 +59,7 @@ export function ManagerVistoriasPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [all]);
 
-  // aplicar/limpar filtros = atualizar URL (evidência: reproduzível só pela querystring + localStorage)
+  // aplicar/limpar filtros = atualizar URL (evidÃªncia: reproduzÃ­vel sÃ³ pela querystring + localStorage)
   function applyFilters() {
     const next = new URLSearchParams();
     if (proposalId.trim()) next.set("proposal_id", proposalId.trim());
@@ -190,7 +190,7 @@ export function ManagerVistoriasPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Ex.: praça, canteiro, avenida..."
+                placeholder="Ex.: praÃ§a, canteiro, avenida..."
                 style={{
                   width: "100%",
                   marginTop: 6,
@@ -222,13 +222,13 @@ export function ManagerVistoriasPage() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <div>
                   <strong>
-                    {v.codigo_protocolo ?? "—"} · {v.status ?? "—"}
+                    {v.codigo_protocolo ?? "â€”"} Â· {v.status ?? "â€”"}
                   </strong>
                   <div className="muted" style={{ marginTop: 4 }}>
-                    Área: {v.area_nome ?? "—"}
+                    Ãrea: {v.area_nome ?? "â€”"}
                   </div>
                   <div className="muted">Agendada: {fmtBR(v.agendada_para)}</div>
-                  <div className="muted">Local: {v.local_texto ?? "—"}</div>
+                  <div className="muted">Local: {v.local_texto ?? "â€”"}</div>
                 </div>
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -259,3 +259,4 @@ export function ManagerVistoriasPage() {
     </div>
   );
 }
+

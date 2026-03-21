@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { z } from "zod";
@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
 import type { AreaRequest, AreaRequestDocumentoMeta, AreaRequestDocumentoTipo } from "../domain/area_request";
-import { createAreaRequest } from "../storage/area_requests";
+import { areaRequestsService } from "../services/areaRequests.service";
 import { next_protocol } from "../storage/protocol";
 import { useAuth } from "../auth/AuthContext";
 
@@ -23,8 +23,8 @@ function safeUuid(): string {
 const schema = z.object({
   lote: z.string().optional(),
   quadra: z.string().optional(),
-  localizacao_descritiva: z.string().min(8, "Informe uma localização descritiva (mín. 8 caracteres)."),
-  descricao_intervencao: z.string().min(10, "Descreva a intervenção pretendida (mín. 10 caracteres)."),
+  localizacao_descritiva: z.string().min(8, "Informe uma localizaÃ§Ã£o descritiva (mÃ­n. 8 caracteres)."),
+  descricao_intervencao: z.string().min(10, "Descreva a intervenÃ§Ã£o pretendida (mÃ­n. 10 caracteres)."),
   carta_intencao: z.any(),
   projeto_resumo: z.any(),
   fotos_referencia: z.any().optional(),
@@ -75,7 +75,7 @@ export function AreaRequestNewPage() {
   const captureGeo = () => {
     setGeoMsg(null);
     if (!navigator.geolocation) {
-      setGeoMsg("Geolocalização não suportada neste navegador.");
+      setGeoMsg("GeolocalizaÃ§Ã£o nÃ£o suportada neste navegador.");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -96,7 +96,7 @@ export function AreaRequestNewPage() {
     const carta = values.carta_intencao as FileList;
     const projeto = values.projeto_resumo as FileList;
 
-    if (!carta?.length) return alert("Anexe a Carta de Intenção.");
+    if (!carta?.length) return alert("Anexe a Carta de IntenÃ§Ã£o.");
     if (!projeto?.length) return alert("Anexe o Projeto Resumo.");
 
     const docs: AreaRequestDocumentoMeta[] = [
@@ -124,10 +124,10 @@ export function AreaRequestNewPage() {
     };
 
     try {
-      createAreaRequest(req, actor_role);
+      areaRequestsService.create(req, actor_role);
       navigate("/minhas-solicitacoes-area", { replace: true });
     } catch (e: any) {
-      alert(e?.message ?? "Erro ao criar solicitação.");
+      alert(e?.message ?? "Erro ao criar solicitaÃ§Ã£o.");
     }
   };
 
@@ -136,8 +136,8 @@ export function AreaRequestNewPage() {
       <div className="page">
         <header className="page__header">
           <div className="page__titlewrap">
-            <h1 className="page__title">Solicitar cadastro de área para adoção</h1>
-            <p className="page__subtitle">Use quando a área ainda não está cadastrada no sistema.</p>
+            <h1 className="page__title">Solicitar cadastro de Ã¡rea para adoÃ§Ã£o</h1>
+            <p className="page__subtitle">Use quando a Ã¡rea ainda nÃ£o estÃ¡ cadastrada no sistema.</p>
           </div>
         </header>
 
@@ -155,7 +155,7 @@ export function AreaRequestNewPage() {
             </div>
 
             <label>
-              Localização descritiva (rua, referência, próximo ao nº etc.)
+              LocalizaÃ§Ã£o descritiva (rua, referÃªncia, prÃ³ximo ao nÂº etc.)
               <textarea className="input" rows={3} {...register("localizacao_descritiva")} />
               {errors.localizacao_descritiva?.message ? <div className="err">{String(errors.localizacao_descritiva.message)}</div> : null}
             </label>
@@ -170,7 +170,7 @@ export function AreaRequestNewPage() {
               </div>
               {geo ? (
                 <div className="muted">
-                  lat={geo.lat} | lng={geo.lng} | acurácia≈{geo.accuracy_m ?? "—"}m | {geo.captured_at}
+                  lat={geo.lat} | lng={geo.lng} | acurÃ¡ciaâ‰ˆ{geo.accuracy_m ?? "â€”"}m | {geo.captured_at}
                 </div>
               ) : (
                 <div className="muted">Sem coordenadas capturadas.</div>
@@ -178,29 +178,29 @@ export function AreaRequestNewPage() {
             </div>
 
             <label>
-              Descrição da intervenção pretendida (projeto básico)
+              DescriÃ§Ã£o da intervenÃ§Ã£o pretendida (projeto bÃ¡sico)
               <textarea className="input" rows={4} {...register("descricao_intervencao")} />
               {errors.descricao_intervencao?.message ? <div className="err">{String(errors.descricao_intervencao.message)}</div> : null}
             </label>
 
             <div style={{ display: "grid", gap: 10 }}>
               <label>
-                Carta de Intenção (obrigatório)
+                Carta de IntenÃ§Ã£o (obrigatÃ³rio)
                 <input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" {...register("carta_intencao")} />
               </label>
               <label>
-                Projeto Resumo (obrigatório)
+                Projeto Resumo (obrigatÃ³rio)
                 <input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" {...register("projeto_resumo")} />
               </label>
               <label>
-                Fotos de referência (opcional, múltiplas)
+                Fotos de referÃªncia (opcional, mÃºltiplas)
                 <input type="file" multiple accept=".png,.jpg,.jpeg" {...register("fotos_referencia")} />
               </label>
             </div>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button className="btn btn--primary" type="submit">
-                Protocolar solicitação
+                Protocolar solicitaÃ§Ã£o
               </button>
               <button className="btn" type="button" onClick={() => navigate("/areas")}>
                 Voltar
@@ -212,3 +212,4 @@ export function AreaRequestNewPage() {
     </div>
   );
 }
+

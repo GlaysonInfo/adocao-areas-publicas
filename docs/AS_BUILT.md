@@ -1,6 +1,6 @@
 # AS-BUILT (estado atual do sistema)
 
-> **Gerado em:** 2026-03-21T10:46:00.493Z
+> **Gerado em:** 2026-03-21T12:57:37.169Z
 
 ## Objetivo
 Este documento registra o estado atual implementado do sistema, com foco em escopo funcional, rotas, telas, regras de negócio e evidências mínimas de validação.
@@ -94,47 +94,59 @@ npm run dev
 
 ## Versão do código
 - **Branch:** main
-- **Commit:** f0d852b5a6c701a5a842985acaa01d8e4b98c50b
+- **Commit:** a23a950ecef87a0294025c3fc6828b00a5c48443
 
 ### git status (porcelain)
 ```
 M docs/ARCHITECTURE.md
  M docs/AS_BUILT.md
- M docs/HANDOFF.md
- M docs/VALIDATION.md
- M package-lock.json
- M package.json
- M scripts/as-built/generate_as_built.mjs
+ M docs/ROADMAP.md
+ M src/pages/AreaRequestNewPage.tsx
+ M src/pages/AreasPage.tsx
+ M src/pages/ManagerAreaRequestDetailPage.tsx
+ M src/pages/ManagerAreaRequestsPage.tsx
  M src/pages/ManagerKanbanPage.tsx
- M src/storage/areas.ts
- M src/storage/proposals.ts
-?? "O que levar para o novo chat em 28122025.txt"
-?? apps/
-?? apps_api_fastify_scaffold.zip
-?? docker-compose.yml
-?? docs/ROADMAP.md
-?? scripts/as-built/lib/
-?? scripts/as-built/templates/
-?? scripts/validate_vistorias.ps1
+ M src/pages/ManagerProposalDetailPage.tsx
+ M src/pages/ManagerVistoriaDetailPage.tsx
+ M src/pages/ManagerVistoriaNewPage.tsx
+ M src/pages/ManagerVistoriasPage.tsx
+ M src/pages/MyAreaRequestsPage.tsx
+ M src/pages/MyProposalDetailPage.tsx
+ M src/pages/MyProposalsPage.tsx
+ M src/pages/ProposalNewPage.tsx
+ M src/pages/admin/AdminAreasImportPage.tsx
+ M src/pages/admin/AdminAreasPage.tsx
+ M src/pages/reports/ReportsPage.tsx
+?? src/services/
 ```
 
 ### git diff --stat
 ```
-docs/ARCHITECTURE.md                   |  81 ++--
- docs/AS_BUILT.md                       | 144 ++++++-
- docs/HANDOFF.md                        | 282 ++++++++-----
- docs/VALIDATION.md                     | 732 ++++++++++++++++++++++++++++++++-
- package-lock.json                      | 711 +++++++++++++++++++++++++++++++-
- package.json                           |   3 +-
- scripts/as-built/generate_as_built.mjs | 408 +-----------------
- src/pages/ManagerKanbanPage.tsx        |  86 ++--
- src/storage/areas.ts                   |  30 +-
- src/storage/proposals.ts               | 123 ++----
- 10 files changed, 1899 insertions(+), 701 deletions(-)
+docs/ARCHITECTURE.md                       |   2 +-
+ docs/AS_BUILT.md                           |  68 +++++++-----
+ docs/ROADMAP.md                            |   2 +-
+ src/pages/AreaRequestNewPage.tsx           |  37 +++----
+ src/pages/AreasPage.tsx                    |  69 ++++++------
+ src/pages/ManagerAreaRequestDetailPage.tsx |  87 +++++++--------
+ src/pages/ManagerAreaRequestsPage.tsx      |  19 ++--
+ src/pages/ManagerKanbanPage.tsx            |  94 +++++++++-------
+ src/pages/ManagerProposalDetailPage.tsx    | 109 ++++++++++---------
+ src/pages/ManagerVistoriaDetailPage.tsx    | 167 ++++++++++++++---------------
+ src/pages/ManagerVistoriaNewPage.tsx       |  57 +++++-----
+ src/pages/ManagerVistoriasPage.tsx         |  25 ++---
+ src/pages/MyAreaRequestsPage.tsx           |  25 ++---
+ src/pages/MyProposalDetailPage.tsx         |  23 ++--
+ src/pages/MyProposalsPage.tsx              |  13 +--
+ src/pages/ProposalNewPage.tsx              |  16 +--
+ src/pages/admin/AdminAreasImportPage.tsx   |  12 ++-
+ src/pages/admin/AdminAreasPage.tsx         |  88 +++++++--------
+ src/pages/reports/ReportsPage.tsx          |  59 +++++-----
+ 19 files changed, 503 insertions(+), 469 deletions(-)
 ```
 
 ### git log -n 20 --oneline
 ```
+a23a950 refactor(domain): centraliza status, transitions e invariants
 f0d852b docs: session handoff 2025-12-29
 bd09b7f chore(docs): add docs:gen script
 ee80e6c docs: atualiza arquitetura/handoff/validation (auto)

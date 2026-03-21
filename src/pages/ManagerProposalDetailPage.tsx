@@ -1,21 +1,20 @@
-// src/pages/ManagerProposalDetailPage.tsx
+﻿// src/pages/ManagerProposalDetailPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { KanbanColuna } from "../domain/proposal";
-import { getProposalById, moveProposal, subscribeProposals } from "../storage/proposals";
 import { useAuth } from "../auth/AuthContext";
+import { proposalsService, vistoriasService } from "../services";
 
-// ✅ para verificar se existe laudo emitido na proposta
-import { listVistorias, subscribeVistorias } from "../storage/vistorias";
+// âœ… para verificar se existe laudo emitido na proposta
 
 type Action = { label: string; to: KanbanColuna };
 
 const STATUS_LABEL: Record<KanbanColuna, string> = {
   protocolo: "Protocolo",
-  analise_semad: "Análise SEMAD",
-  analise_ecos: "Análise ECOS",
+  analise_semad: "AnÃ¡lise SEMAD",
+  analise_ecos: "AnÃ¡lise ECOS",
   ajustes: "Ajustes",
-  decisao: "Decisão",
+  decisao: "DecisÃ£o",
   termo_assinado: "Termo Assinado",
   indeferida: "Indeferida",
 };
@@ -27,7 +26,7 @@ function actionsFor(role: string | null, col: KanbanColuna): Action[] {
   const is_gov = role === "gestor_governo";
 
   if (col === "protocolo" && (is_admin || is_semad)) {
-    return [{ label: "Iniciar análise (SEMAD)", to: "analise_semad" }];
+    return [{ label: "Iniciar anÃ¡lise (SEMAD)", to: "analise_semad" }];
   }
 
   if (col === "analise_semad" && (is_admin || is_semad)) {
@@ -40,14 +39,14 @@ function actionsFor(role: string | null, col: KanbanColuna): Action[] {
 
   if (col === "analise_ecos" && (is_admin || is_ecos)) {
     return [
-      { label: "Encaminhar p/ decisão", to: "decisao" },
+      { label: "Encaminhar p/ decisÃ£o", to: "decisao" },
       { label: "Solicitar ajustes", to: "ajustes" },
       { label: "Indeferir", to: "indeferida" },
     ];
   }
 
   if (col === "ajustes" && (is_admin || is_semad || is_ecos)) {
-    return [{ label: "Retomar análise (SEMAD)", to: "analise_semad" }];
+    return [{ label: "Retomar anÃ¡lise (SEMAD)", to: "analise_semad" }];
   }
 
   if (col === "decisao" && (is_admin || is_gov)) {
@@ -67,7 +66,7 @@ function canMove(role: string | null, from: KanbanColuna, to: KanbanColuna) {
 }
 
 function fmt(iso?: string) {
-  if (!iso) return "—";
+  if (!iso) return "â€”";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleString("pt-BR");
@@ -75,7 +74,7 @@ function fmt(iso?: string) {
 
 function askAjustesNote(): string | null {
   const txt = window.prompt(
-    "Explique detalhadamente o motivo/orientações para ajustes (isso será exibido ao adotante):",
+    "Explique detalhadamente o motivo/orientaÃ§Ãµes para ajustes (isso serÃ¡ exibido ao adotante):",
     ""
   );
   if (txt == null) return null;
@@ -85,7 +84,7 @@ function askAjustesNote(): string | null {
 }
 
 function askIndeferimentoNote(): string | null {
-  const txt = window.prompt("Motivo do indeferimento (será exibido ao adotante):", "");
+  const txt = window.prompt("Motivo do indeferimento (serÃ¡ exibido ao adotante):", "");
   if (txt == null) return null;
   const t = txt.trim();
   if (!t) return null;
@@ -94,15 +93,15 @@ function askIndeferimentoNote(): string | null {
 
 function askOverrideNoVistoriaReason(gateTo: KanbanColuna): string | null {
   const ok = window.confirm(
-    `Atenção: não foi encontrado LAUDO DE VISTORIA emitido para esta proposta.\n\n` +
-      `Você está prestes a avançar para "${gateTo}".\n\n` +
+    `AtenÃ§Ã£o: nÃ£o foi encontrado LAUDO DE VISTORIA emitido para esta proposta.\n\n` +
+      `VocÃª estÃ¡ prestes a avanÃ§ar para "${gateTo}".\n\n` +
       `Deseja fazer OVERRIDE (seguir sem vistoria)?\n` +
-      `• Será registrado para governança/auditoria.\n` +
-      `• Motivo será obrigatório.`
+      `â€¢ SerÃ¡ registrado para governanÃ§a/auditoria.\n` +
+      `â€¢ Motivo serÃ¡ obrigatÃ³rio.`
   );
   if (!ok) return null;
 
-  const motivo = (window.prompt("Motivo do override (obrigatório):", "") ?? "").trim();
+  const motivo = (window.prompt("Motivo do override (obrigatÃ³rio):", "") ?? "").trim();
   if (!motivo) return null;
 
   return motivo;
@@ -116,17 +115,17 @@ export function ManagerProposalDetailPage() {
   const [tickP, setTickP] = useState(0);
   const [tickV, setTickV] = useState(0);
 
-  useEffect(() => subscribeProposals(() => setTickP((t) => t + 1)), []);
-  useEffect(() => subscribeVistorias(() => setTickV((t) => t + 1)), []);
+  useEffect(() => proposalsService.subscribe(() => setTickP((t) => t + 1)), []);
+  useEffect(() => vistoriasService.subscribe(() => setTickV((t) => t + 1)), []);
 
   const p = useMemo(() => {
     if (!id) return null;
-    return getProposalById(id);
+    return proposalsService.getById(id);
   }, [id, tickP]);
 
   const vistoriasDaProposta = useMemo(() => {
     if (!p?.id) return [];
-    return listVistorias().filter((v: any) => String(v?.proposal_id ?? "") === p.id);
+    return vistoriasService.listAll().filter((v: any) => String(v?.proposal_id ?? "") === p.id);
   }, [p?.id, tickV]);
 
   const hasLaudoEmitido = useMemo(() => {
@@ -144,7 +143,7 @@ export function ManagerProposalDetailPage() {
     return (
       <div className="container">
         <div className="card pad">
-          <h2 style={{ marginTop: 0 }}>Proposta não encontrada</h2>
+          <h2 style={{ marginTop: 0 }}>Proposta nÃ£o encontrada</h2>
           <button type="button" className="btn" onClick={() => navigate("/gestor/kanban")}>
             Voltar ao Kanban
           </button>
@@ -172,35 +171,35 @@ export function ManagerProposalDetailPage() {
 
   const doMove = (to: KanbanColuna) => {
     if (!canMove(role, col, to)) {
-      alert("Transição não permitida para este perfil/etapa.");
+      alert("TransiÃ§Ã£o nÃ£o permitida para este perfil/etapa.");
       return;
     }
 
     let note: string | undefined;
     let extraEvents: any[] | undefined;
 
-    // ✅ motivo obrigatório (ajustes)
+    // âœ… motivo obrigatÃ³rio (ajustes)
     if (to === "ajustes") {
       const txt = askAjustesNote();
       if (!txt) return;
       note = txt;
     }
 
-    // ✅ motivo obrigatório (indeferida)
+    // âœ… motivo obrigatÃ³rio (indeferida)
     if (to === "indeferida") {
       const txt = askIndeferimentoNote();
       if (!txt) return;
       note = txt;
     }
 
-    // ✅ GATE: decisao/termo_assinado sem laudo → override + motivo obrigatório
+    // âœ… GATE: decisao/termo_assinado sem laudo â†’ override + motivo obrigatÃ³rio
     const gateTargets: KanbanColuna[] = ["decisao", "termo_assinado"];
     const isGateTarget = gateTargets.includes(to);
 
     if (isGateTarget && !hasLaudoEmitido) {
       const motivo = askOverrideNoVistoriaReason(to);
       if (!motivo) {
-        alert("Override cancelado ou motivo não informado.");
+        alert("Override cancelado ou motivo nÃ£o informado.");
         return;
       }
 
@@ -217,7 +216,7 @@ export function ManagerProposalDetailPage() {
 
     try {
       // moveProposal(id, to, actor_role, note?, extraEvents?)
-      moveProposal(p.id, to, role ?? "unknown", note, extraEvents);
+      proposalsService.move(p.id, to, role ?? "unknown", note, extraEvents);
       setTickP((t) => t + 1);
     } catch (e: any) {
       alert(e?.message ?? "Falha ao mover proposta.");
@@ -233,8 +232,8 @@ export function ManagerProposalDetailPage() {
           <div className="page__titlewrap">
             <h1 className="page__title">Detalhe da Proposta (Gestor)</h1>
             <p className="page__subtitle">
-              Protocolo <strong>{p.codigo_protocolo}</strong> · Etapa: <strong>{STATUS_LABEL[col] ?? col}</strong> · Perfil:{" "}
-              <strong>{role ?? "—"}</strong>
+              Protocolo <strong>{p.codigo_protocolo}</strong> Â· Etapa: <strong>{STATUS_LABEL[col] ?? col}</strong> Â· Perfil:{" "}
+              <strong>{role ?? "â€”"}</strong>
             </p>
           </div>
 
@@ -253,19 +252,19 @@ export function ManagerProposalDetailPage() {
           </div>
         </header>
 
-        {/* ✅ INFO: evidência de vistoria / laudo */}
+        {/* âœ… INFO: evidÃªncia de vistoria / laudo */}
         <section className="card pad" style={{ marginBottom: 12 }}>
           <div className="grid cols-2">
             <div>
               <strong>Vistorias vinculadas:</strong> {vistoriasDaProposta.length}
               <div className="muted" style={{ marginTop: 6 }}>
-                Laudo emitido: <strong>{hasLaudoEmitido ? "SIM" : "NÃO"}</strong>
+                Laudo emitido: <strong>{hasLaudoEmitido ? "SIM" : "NÃƒO"}</strong>
               </div>
             </div>
             <div>
               {latestLaudo ? (
                 <div className="muted">
-                  Último laudo emitido em: <strong>{fmt(latestLaudo?.laudo?.emitido_em ?? latestLaudo?.updated_at ?? latestLaudo?.created_at)}</strong>
+                  Ãšltimo laudo emitido em: <strong>{fmt(latestLaudo?.laudo?.emitido_em ?? latestLaudo?.updated_at ?? latestLaudo?.created_at)}</strong>
                 </div>
               ) : (
                 <div className="muted">Nenhum laudo emitido ainda.</div>
@@ -274,16 +273,16 @@ export function ManagerProposalDetailPage() {
           </div>
         </section>
 
-        {/* Motivo de ajustes visível também para o gestor */}
+        {/* Motivo de ajustes visÃ­vel tambÃ©m para o gestor */}
         {lastAjustesNote ? (
           <section className="card pad" style={{ borderLeft: "6px solid rgba(245,158,11,.7)" }}>
-            <h3 style={{ marginTop: 0 }}>Motivo / orientações de ajustes</h3>
+            <h3 style={{ marginTop: 0 }}>Motivo / orientaÃ§Ãµes de ajustes</h3>
             <div style={{ whiteSpace: "pre-wrap" }}>{lastAjustesNote}</div>
           </section>
         ) : null}
 
-        <section className="card pad" aria-label="Ações">
-          <h3 style={{ marginTop: 0 }}>Ações</h3>
+        <section className="card pad" aria-label="AÃ§Ãµes">
+          <h3 style={{ marginTop: 0 }}>AÃ§Ãµes</h3>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {canScheduleVistoria ? (
@@ -293,7 +292,7 @@ export function ManagerProposalDetailPage() {
             ) : null}
 
             {acts.length === 0 ? (
-              <span className="muted">Sem ações disponíveis para esta etapa/perfil.</span>
+              <span className="muted">Sem aÃ§Ãµes disponÃ­veis para esta etapa/perfil.</span>
             ) : (
               acts.map((a) => (
                 <button key={a.to} type="button" className="btn" onClick={() => doMove(a.to)}>
@@ -304,8 +303,8 @@ export function ManagerProposalDetailPage() {
           </div>
 
           <div className="muted" style={{ marginTop: 10 }}>
-            Observação: ao avançar para <code>decisao</code> ou <code>termo_assinado</code> sem laudo emitido, o sistema exigirá
-            confirmação + motivo e registrará <code>override_no_vistoria</code> no event-log.
+            ObservaÃ§Ã£o: ao avanÃ§ar para <code>decisao</code> ou <code>termo_assinado</code> sem laudo emitido, o sistema exigirÃ¡
+            confirmaÃ§Ã£o + motivo e registrarÃ¡ <code>override_no_vistoria</code> no event-log.
           </div>
         </section>
 
@@ -313,10 +312,10 @@ export function ManagerProposalDetailPage() {
           <div className="grid cols-1">
             <div>
               <div>
-                <strong>Área:</strong> {p.area_nome}
+                <strong>Ãrea:</strong> {p.area_nome}
               </div>
               <div>
-                <strong>Status técnico:</strong> {p.kanban_coluna}
+                <strong>Status tÃ©cnico:</strong> {p.kanban_coluna}
               </div>
             </div>
 
@@ -331,10 +330,10 @@ export function ManagerProposalDetailPage() {
           </div>
         </section>
 
-        <section className="grid cols-2" aria-label="Conteúdo">
+        <section className="grid cols-2" aria-label="ConteÃºdo">
           <div className="card pad">
             <h3 style={{ marginTop: 0 }}>Plano</h3>
-            <div style={{ whiteSpace: "pre-wrap" }}>{p.descricao_plano?.trim() ? p.descricao_plano : "—"}</div>
+            <div style={{ whiteSpace: "pre-wrap" }}>{p.descricao_plano?.trim() ? p.descricao_plano : "â€”"}</div>
           </div>
 
           <div className="card pad">
@@ -344,7 +343,7 @@ export function ManagerProposalDetailPage() {
                 {p.documentos.map((d: any, i: number) => (
                   <li key={`${d.tipo}-${i}`}>
                     <strong>{d.tipo}:</strong> {d.file_name} ({Math.round((d.file_size ?? 0) / 1024)} KB)
-                    <div className="muted">{d.mime_type || "—"}</div>
+                    <div className="muted">{d.mime_type || "â€”"}</div>
                   </li>
                 ))}
               </ul>
@@ -354,14 +353,14 @@ export function ManagerProposalDetailPage() {
           </div>
         </section>
 
-        <section className="card pad" aria-label="Histórico">
-          <h3 style={{ marginTop: 0 }}>Histórico</h3>
+        <section className="card pad" aria-label="HistÃ³rico">
+          <h3 style={{ marginTop: 0 }}>HistÃ³rico</h3>
 
           {history.length ? (
             <ul style={{ margin: "6px 0 0 18px" }}>
               {history.map((ev: any, i: number) => {
                 const type = String(ev?.type ?? ev?.action ?? "evento");
-                const actor = String(ev?.actor_role ?? ev?.actor ?? ev?.by ?? "—");
+                const actor = String(ev?.actor_role ?? ev?.actor ?? ev?.by ?? "â€”");
                 const at = String(ev?.at ?? ev?.created_at ?? ev?.ts ?? "");
 
                 const from = ev?.from ?? ev?.meta?.gate_from ?? ev?.gate_from;
@@ -369,8 +368,8 @@ export function ManagerProposalDetailPage() {
 
                 return (
                   <li key={i}>
-                    <strong>{fmt(at)}</strong> — <strong>{actor}</strong> — {type}
-                    {from || to ? ` (${from ?? "—"} → ${to ?? "—"})` : ""}
+                    <strong>{fmt(at)}</strong> â€” <strong>{actor}</strong> â€” {type}
+                    {from || to ? ` (${from ?? "â€”"} â†’ ${to ?? "â€”"})` : ""}
 
                     {ev?.note ? (
                       <div style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
@@ -389,3 +388,9 @@ export function ManagerProposalDetailPage() {
     </div>
   );
 }
+
+
+
+
+
+
