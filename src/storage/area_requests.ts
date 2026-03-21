@@ -1,4 +1,4 @@
-// src/storage/area_requests.ts
+﻿// src/storage/area_requests.ts
 import type { AreaDraft, AreaRequest, AreaRequestDocumentoMeta, AreaRequestEvent, AreaRequestStatus, SisGeoResultado } from "../domain/area_request";
 
 import type { AreaPublica } from "../domain/area";
@@ -80,7 +80,7 @@ function normalizeHistory(raw: any): AreaRequestEvent[] {
 
 function normalizeOne(raw: any): AreaRequest {
   const id = String(raw?.id ?? safeUuid());
-  const codigo_protocolo = String(raw?.codigo_protocolo ?? "—");
+  const codigo_protocolo = String(raw?.codigo_protocolo ?? "â€”");
   const status = String(raw?.status ?? "solicitada") as AreaRequestStatus;
 
   const owner_role = String(raw?.owner_role ?? "adotante_pf");
@@ -161,7 +161,7 @@ export function listMyAreaRequests(owner_role: string | null | undefined): AreaR
   return listAreaRequests().filter((r) => r.owner_role === role);
 }
 
-function pushEvent(r: AreaRequest, ev: Omit<AreaRequestEvent, "id">): AreaRequest {
+function pushEvent(r: AreaRequest, ev: any): AreaRequest {
   const e = { ...ev, id: safeUuid() } as AreaRequestEvent;
   return { ...r, history: [...(r.history ?? []), e] };
 }
@@ -170,8 +170,8 @@ export function createAreaRequest(input: AreaRequest, actor_role: string) {
   const created = input.created_at ?? nowIso();
   const updated = input.updated_at ?? created;
 
-  if (!String(input.localizacao_descritiva ?? "").trim()) throw new Error("Informe a localização descritiva.");
-  if (!String(input.descricao_intervencao ?? "").trim()) throw new Error("Informe a descrição da intervenção.");
+  if (!String(input.localizacao_descritiva ?? "").trim()) throw new Error("Informe a localizaÃ§Ã£o descritiva.");
+  if (!String(input.descricao_intervencao ?? "").trim()) throw new Error("Informe a descriÃ§Ã£o da intervenÃ§Ã£o.");
 
   const base: AreaRequest = {
     ...input,
@@ -193,10 +193,10 @@ export function createAreaRequest(input: AreaRequest, actor_role: string) {
 export function startVerification(id: string, actor_role: string) {
   const all = listAreaRequests();
   const idx = all.findIndex((r) => r.id === id);
-  if (idx < 0) throw new Error("Solicitação não encontrada.");
+  if (idx < 0) throw new Error("SolicitaÃ§Ã£o nÃ£o encontrada.");
 
   const current = all[idx];
-  if (current.status === "aprovada" || current.status === "indeferida") throw new Error("Solicitação encerrada.");
+  if (current.status === "aprovada" || current.status === "indeferida") throw new Error("SolicitaÃ§Ã£o encerrada.");
 
   const t = nowIso();
   let next: AreaRequest = { ...current, status: "em_verificacao", updated_at: t };
@@ -214,10 +214,10 @@ export function updateSisGeo(
 ) {
   const all = listAreaRequests();
   const idx = all.findIndex((r) => r.id === id);
-  if (idx < 0) throw new Error("Solicitação não encontrada.");
+  if (idx < 0) throw new Error("SolicitaÃ§Ã£o nÃ£o encontrada.");
 
   const current = all[idx];
-  if (current.status === "aprovada" || current.status === "indeferida") throw new Error("Solicitação encerrada.");
+  if (current.status === "aprovada" || current.status === "indeferida") throw new Error("SolicitaÃ§Ã£o encerrada.");
 
   const t = nowIso();
   let next: AreaRequest = {
@@ -246,7 +246,7 @@ export function updateSisGeo(
 export function setAreaDraft(id: string, draft: AreaDraft) {
   const all = listAreaRequests();
   const idx = all.findIndex((r) => r.id === id);
-  if (idx < 0) throw new Error("Solicitação não encontrada.");
+  if (idx < 0) throw new Error("SolicitaÃ§Ã£o nÃ£o encontrada.");
 
   const current = all[idx];
   const t = nowIso();
@@ -281,10 +281,10 @@ export function decideAreaRequest(
 ) {
   const all = listAreaRequests();
   const idx = all.findIndex((r) => r.id === id);
-  if (idx < 0) throw new Error("Solicitação não encontrada.");
+  if (idx < 0) throw new Error("SolicitaÃ§Ã£o nÃ£o encontrada.");
 
   const current = all[idx];
-  if (current.status === "aprovada" || current.status === "indeferida") throw new Error("Solicitação encerrada.");
+  if (current.status === "aprovada" || current.status === "indeferida") throw new Error("SolicitaÃ§Ã£o encerrada.");
 
   const t = nowIso();
 
@@ -301,15 +301,15 @@ export function decideAreaRequest(
   }
 
   const draft = input.area_draft;
-  if (!draft?.codigo || !draft?.nome || !draft?.tipo) throw new Error("Preencha o cadastro mínimo da área (código/nome/tipo).");
+  if (!draft?.codigo || !draft?.nome || !draft?.tipo) throw new Error("Preencha o cadastro mÃ­nimo da Ã¡rea (cÃ³digo/nome/tipo).");
 
-  // 1) cria área
+  // 1) cria Ã¡rea
   const area_created: AreaPublica = createArea({
     codigo: draft.codigo,
     nome: draft.nome,
     tipo: draft.tipo,
-    bairro: draft.bairro || "—",
-    logradouro: draft.logradouro || "—",
+    bairro: draft.bairro || "â€”",
+    logradouro: draft.logradouro || "â€”",
     metragem_m2: Number(draft.metragem_m2 ?? 0),
     status: "disponivel",
     ativo: true,

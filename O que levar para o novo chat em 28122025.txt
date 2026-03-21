@@ -1,0 +1,242 @@
+Contexto: monorepo adocao-areas-web. Backend em apps/api (Fastify v4 + TS + Swagger + Prisma 6.19.1). Postgres 18 local (Windows service) DB adocao_areas. Seed ok (20 áreas CSV data/import/areas_betim_20_simuladas.csv). Endpoints ok: /v1/areas CRUD, /v1/proposals create/move/events com event-log como fonte de verdade (create/move/override_no_vistoria/decision). Swagger em /docs. PowerShell IRM dá erro em POST JSON; usar curl.exe --data-binary com helper PostJson. Prisma EPERM resolvido matando node e removendo node_modules\.prisma.
+
+Objetivo próximo: validar e fechar módulo vistorias (create/schedule/execute/issue-laudo + /events + replay de status) e depois integrar frontend → backend + RBAC.
+Arquivo de handoff: docs/HISTORY_SESSION_2025-12-29.md
+
+Procedimento (VS Code → histórico do ponto de parada)
+1) Criar arquivo de handoff
+
+Arquivo sugerido: docs/HISTORY_SESSION_2025-12-29.md
+
+No VS Code:
+
+Abrir a pasta do repositório.
+
+Criar arquivo: docs/HISTORY_SESSION_2025-12-29.md
+
+Colar o conteúdo completo abaixo.
+
+Salvar.
+
+2) Versionar no Git
+
+No terminal (raiz do repo):
+
+git add docs/HISTORY_SESSION_2025-12-29.md
+git commit -m "docs: session handoff 2025-12-29"
+git push
+
+Conteúdo completo para docs/HISTORY_SESSION_2025-12-29.md
+# Handoff — Sessão 2025-12-29 (Backend/API + PostgreSQL + Prisma)
+
+## Estado atual (evidência)
+- Repositório: `adocao-areas-web` (monorepo com frontend + backend).
+- Backend: `apps/api` (Fastify v4 + TypeScript + Swagger + Prisma).
+- Banco: PostgreSQL 18 (Windows service), porta 5432.
+- DB usada: `adocao_areas` (schema `public`).
+- Seed executado com sucesso:
+  - CSV: `data/import/areas_betim_20_simuladas.csv`
+  - Resultado: 20 áreas inseridas/upsert.
+  - Evidência: saída do seed retornou `rows_read=20`, `upserted=20`, `total_in_db=20`.
+
+## Decisões técnicas já consolidadas
+- Fastify **v4** (manter compatibilidade de plugins).
+- Swagger compatível com Fastify v4:
+  - `@fastify/swagger` em versão compatível com v4 (ex.: 8.x)
+  - `@fastify/swagger-ui` em versão compatível com v4 (ex.: 2.x)
+- Prisma fixado em **v6.19.1** (evitar quebra da Prisma 7 / datasource.url).
+- Postgres local via serviço Windows (Docker não instalado no ambiente).
+
+## Variáveis de ambiente (apps/api/.env)
+- `HOST=0.0.0.0`
+- `PORT=3001`
+- `CORS_ORIGINS=http://localhost:5173`
+- `DATABASE_URL=postgresql://<user>:<pass>@127.0.0.1:5432/adocao_areas?schema=public`
+
+## Como subir o backend (dev)
+No diretório `apps/api`:
+```bash
+npm i
+npx prisma generate
+npm run dev
+
+Swagger / Health
+
+Health: GET http://127.0.0.1:3001/healthz
+
+Esperado: { "ok": true, "env": "development" }
+
+Swagger UI: http://127.0.0.1:3001/docs
+
+OpenAPI JSON: http://127.0.0.1:3001/docs/json
+
+Problemas recorrentes e correções
+A) PowerShell Invoke-RestMethod (IRM) com POST JSON
+
+Sintomas:
+
+FST_ERR_CTP_INVALID_CONTENT_LENGTH
+
+Unexpected non-whitespace character after JSON...
+
+Correção:
+
+Usar curl.exe com --data-binary (corpo exato) via helper PostJson().
+
+Helper recomendado:
+
+$base = "http://127.0.0.1:3001"
+
+function PostJson($url, $obj) {
+  $json = ($obj | ConvertTo-Json -Depth 50 -Compress)
+  $tmp = New-TemporaryFile
+  [System.IO.File]::WriteAllText($tmp.FullName, $json, [System.Text.UTF8Encoding]::new($false))
+  $out = curl.exe -sS -X POST $url -H "Content-Type: application/json" --data-binary "@$($tmp.FullName)"
+  Remove-Item $tmp.FullName -Force
+  if (-not $out) { return $null }
+  return ($out | ConvertFrom-Json)
+}
+
+B) Prisma generate EPERM (Windows file lock)
+
+Sintoma:
+
+EPERM: operation not permitted, rename ... query_engine-windows.dll.node.tmp -> ...
+
+Correção:
+
+Encerrar processos Node/tsx e remover .prisma:
+
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+Remove-Item -Recurse -Force node_modules\.prisma -ErrorAction SilentlyContinue
+npx prisma generate
+
+C) PostgreSQL (P1001 / P1000)
+
+P1001: servidor não acessível → verificar serviço e porta 5432.
+
+P1000: falha de autenticação → ajustar password do usuário no DATABASE_URL.
+
+Comandos de diagnóstico:
+
+Test-NetConnection 127.0.0.1 -Port 5432
+Get-NetTCPConnection -LocalPort 5432 -State Listen
+$env:PGPASSWORD="<senha>"
+& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h 127.0.0.1 -p 5432 -d postgres -c "SELECT 1;"
+
+Modelos e tabelas (Prisma)
+
+Area (já existente e usada por /v1/areas).
+
+Proposal, ProposalEvent, ProposalDocumento (fluxo kanban + event-log).
+
+Vistoria + VistoriaEvent (módulo vistorias; endpoints expostos no Swagger).
+
+Obs: schema.prisma já passou por prisma format + prisma validate + migrações aplicadas.
+
+Endpoints implementados e validados
+Areas
+
+GET /v1/areas (filtros + paginação)
+
+POST /v1/areas
+
+GET /v1/areas/:id
+
+PATCH /v1/areas/:id
+
+DELETE /v1/areas/:id (soft delete ativo=false)
+
+Proposals (event-log = fonte de verdade)
+
+POST /v1/proposals (cria proposta em protocolo)
+
+POST /v1/proposals/:id/move (move kanban + escreve event-log)
+
+GET /v1/proposals/:id/events (listar event-log)
+Evidência de fluxo completo (validado):
+
+create → move → override_no_vistoria (SEMAD → ECOS com motivo) → decision ao chegar em termo_assinado.
+Replay validado:
+
+estado derivado apenas por eventos move.to_coluna bate com proposal.kanban_coluna.
+
+Vistorias (Swagger já expõe)
+
+GET /v1/vistorias (filtros proposal_id/fase/status + paginação)
+
+POST /v1/vistorias (create rascunho + evento create)
+
+GET /v1/vistorias/:id (detalhe + history ordenado)
+
+GET /v1/vistorias/:id/events (event-log)
+
+POST /v1/vistorias/:id/schedule
+
+POST /v1/vistorias/:id/execute
+
+POST /v1/vistorias/:id/issue-laudo
+
+Nota: erros 400/404 vistos no Swagger eram por uso de IDs placeholder; uso correto requer proposal_id real.
+
+Scripts PowerShell de evidência (reprodutível)
+1) Criar Proposal real + fluxo até termo_assinado + replay
+$base = "http://127.0.0.1:3001"
+
+function PostJson($url, $obj) {
+  $json = ($obj | ConvertTo-Json -Depth 50 -Compress)
+  $tmp = New-TemporaryFile
+  [System.IO.File]::WriteAllText($tmp.FullName, $json, [System.Text.UTF8Encoding]::new($false))
+  $out = curl.exe -sS -X POST $url -H "Content-Type: application/json" --data-binary "@$($tmp.FullName)"
+  Remove-Item $tmp.FullName -Force
+  $out | ConvertFrom-Json
+}
+
+# área disponível
+$areas = irm "$base/v1/areas?status=disponivel&ativo=true&limit=1&offset=0"
+$area = $areas.items | Select-Object -First 1
+
+# cria proposal
+$proposal = PostJson "$base/v1/proposals" @{
+  area_id = $area.id
+  descricao_plano = "Plano de adoção: manutenção mensal, limpeza e jardinagem com cronograma e responsáveis (MVP)."
+  owner_role = "adotante_pf"
+  actor_role = "adotante_pf"
+  documentos = @()
+}
+
+# move até termo_assinado
+$proposal = PostJson "$base/v1/proposals/$($proposal.id)/move" @{ to="analise_semad";  actor_role="gestor_semad";   note="Iniciar análise SEMAD." }
+$proposal = PostJson "$base/v1/proposals/$($proposal.id)/move" @{ to="analise_ecos";   actor_role="gestor_semad";   note="Encaminhar p/ ECOS (motivo obrigatório)." }
+$proposal = PostJson "$base/v1/proposals/$($proposal.id)/move" @{ to="decisao";        actor_role="gestor_ecos";    note="Análise ECOS concluída; encaminhar p/ decisão." }
+$proposal = PostJson "$base/v1/proposals/$($proposal.id)/move" @{ to="termo_assinado"; actor_role="gestor_governo"; note="Aprovado; termo assinado." }
+
+# events + replay
+$events = irm "$base/v1/proposals/$($proposal.id)/events?limit=200&offset=0"
+$col = "protocolo"
+foreach ($e in ($events.items | Sort-Object at)) { if ($e.type -eq "move" -and $e.to_coluna) { $col = $e.to_coluna } }
+"replay_kanban_coluna=$col api_kanban_coluna=$($proposal.kanban_coluna)"
+
+Pendências imediatas (próximo bloco de trabalho)
+
+Validar fluxo completo de Vistoria com event-log + replay do status:
+
+create → schedule → execute → issue_laudo
+
+replay_status derivado apenas de VistoriaEvent.type deve bater com Vistoria.status.
+
+Integrar regras de negócio Proposal ↔ Vistoria (se aplicável):
+
+travas/condições para avançar kanban com base em vistorias/laudos.
+
+Conectar frontend React/Vite ao backend:
+
+trocar storage localStorage por chamadas HTTP (com fallback local apenas para dev).
+
+Planejar autenticação e RBAC server-side:
+
+JWT/Session + roles (adotante_pf, gestor_semad, gestor_ecos, gestor_governo, administrador).
+
+CI/CD:
+
+scripts de migrate/seed em staging, testes de replay por eventos.

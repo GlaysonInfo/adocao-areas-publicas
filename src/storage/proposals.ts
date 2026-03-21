@@ -1,4 +1,4 @@
-// src/storage/proposals.ts
+﻿// src/storage/proposals.ts
 import type {
   KanbanColuna,
   PropostaAdocao,
@@ -7,13 +7,13 @@ import type {
   DocumentoMeta,
   DocumentoTipo,
 } from "../domain/proposal";
-import { getAreaById, setAreaStatus } from "./areas";
+import { canTransitionProposal, requiresNoteForProposalTransition } from "../domain/transitions";
+import { isProposalClosed, runDomainInvariantChecks } from "../domain/invariants";
+import { isProposalKanbanColuna, normalizeLegacyProposalStatus } from "../domain/status";
+import { getAreaById, listAreas, setAreaStatus } from "./areas";
 
 const KEY = "mvp_proposals_v1";
 
-/* =========================
-   SUBSCRIBE
-========================= */
 type Unsub = () => void;
 const listeners = new Set<() => void>();
 
@@ -21,9 +21,7 @@ function emit() {
   for (const fn of listeners) {
     try {
       fn();
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 }
 
@@ -39,9 +37,6 @@ export function subscribeProposals(fn: () => void): Unsub {
   };
 }
 
-/* =========================
-   UTILS
-========================= */
 function nowIso() {
   return new Date().toISOString();
 }
@@ -73,7 +68,7 @@ function readAllRaw(): any[] {
 
 function writeAll(items: PropostaAdocao[]) {
   localStorage.setItem(KEY, JSON.stringify(items));
-  emit(); // dispara no mesmo tab
+  emit();
 }
 
 const ALLOWED_COLS: KanbanColuna[] = [
@@ -87,17 +82,13 @@ const ALLOWED_COLS: KanbanColuna[] = [
 ];
 
 function normalizeCol(raw: any): KanbanColuna {
-  const s = String(raw ?? "").trim();
-  return (ALLOWED_COLS as string[]).includes(s) ? (s as KanbanColuna) : "protocolo";
+  if (isProposalKanbanColuna(raw)) return raw;
+  return normalizeLegacyProposalStatus(raw) ?? "protocolo";
 }
 
-/** Normaliza evento aceitando formatos antigos (historico/action/autor/etc.)
- *  Mantém campos extras (ex.: meta) quando existirem.
- */
 function normalizeEvent(raw: any): (ProposalEvent & { meta?: any; gate_from?: any; gate_to?: any }) | null {
   if (!raw) return null;
 
-  // NOTE: aceita tipos novos mesmo que ProposalEventType não tenha literal.
   const type = String(raw.type ?? raw.action ?? raw.tipo ?? "").trim() as ProposalEventType;
   const at = String(raw.at ?? raw.quando ?? raw.timestamp ?? raw.created_at ?? "");
   const actor_role = String(raw.actor_role ?? raw.actor ?? raw.autor ?? raw.profile ?? raw.role ?? "unknown");
@@ -123,10 +114,7 @@ function normalizeEvent(raw: any): (ProposalEvent & { meta?: any; gate_from?: an
   if (raw.decision) ev.decision = raw.decision === "approved" ? "approved" : "rejected";
   if (raw.decision_note) ev.decision_note = String(raw.decision_note);
 
-  // Mantém meta quando existir (ex.: meta.gate_from/gate_to)
   if (raw.meta != null) ev.meta = raw.meta;
-
-  // compat: também aceita gate_from/gate_to em nível superior
   if (raw.gate_from != null) ev.gate_from = raw.gate_from;
   if (raw.gate_to != null) ev.gate_to = raw.gate_to;
 
@@ -146,7 +134,6 @@ function normalizeProposal(raw: any): PropostaAdocao {
 
   const history = historyRaw.map(normalizeEvent).filter(Boolean) as any[];
 
-  // migração: se não tem history, cria um create mínimo (ajuda relatórios/SLA)
   if (history.length === 0) {
     history.push({
       id: safeUuid(),
@@ -175,6 +162,18 @@ function normalizeProposal(raw: any): PropostaAdocao {
   };
 }
 
+function assertDomainInvariants(items: PropostaAdocao[]) {
+  const checks = runDomainInvariantChecks({
+    areas: listAreas(),
+    proposals: items,
+  });
+
+  const firstError = checks.find((c) => !c.ok);
+  if (firstError) {
+    throw new Error(firstError.message);
+  }
+}
+
 export function listProposals(): PropostaAdocao[] {
   return readAllRaw().map(normalizeProposal);
 }
@@ -184,7 +183,6 @@ export function getProposalById(id: string): PropostaAdocao | null {
   return all.find((p) => p.id === id) ?? null;
 }
 
-// aceita undefined/null (pra UI não estourar tipagem)
 export function listMyProposals(owner_role: string | null | undefined): PropostaAdocao[] {
   const role = String(owner_role ?? "").trim();
   if (!role) return [];
@@ -192,24 +190,12 @@ export function listMyProposals(owner_role: string | null | undefined): Proposta
   return all.filter((p) => p.owner_role === role);
 }
 
-/* =========================
-   RULES
-========================= */
-function isClosed(p: PropostaAdocao) {
-  return (
-    p.closed_status === "approved" ||
-    p.closed_status === "rejected" ||
-    p.kanban_coluna === "termo_assinado" ||
-    p.kanban_coluna === "indeferida"
-  );
-}
-
 function hasOpenProposalForArea(area_id: string, ignoreProposalId?: string) {
   const all = listProposals();
   return all.some((p) => {
     if (ignoreProposalId && p.id === ignoreProposalId) return false;
     if (p.area_id !== area_id) return false;
-    return !isClosed(p);
+    return !isProposalClosed(p);
   });
 }
 
@@ -229,9 +215,6 @@ function pushEvent<T extends Record<string, any>>(p: PropostaAdocao, ev: T, upda
   return next;
 }
 
-/* =========================
-   DOCUMENT HELPERS (MVP = só metadados)
-========================= */
 function fileMeta(tipo: DocumentoTipo, list: FileList): DocumentoMeta {
   const f = list.item(0)!;
   return {
@@ -253,9 +236,6 @@ function upsertDoc(docs: DocumentoMeta[], next: DocumentoMeta): DocumentoMeta[] 
   return [...docs, next];
 }
 
-/* =========================
-   CREATE
-========================= */
 export function createProposal(input: PropostaAdocao, actor_role: string) {
   const area = getAreaById(input.area_id);
   if (!area) throw new Error("Área inválida.");
@@ -284,16 +264,13 @@ export function createProposal(input: PropostaAdocao, actor_role: string) {
 
   const all = listProposals();
   all.unshift(base);
+  assertDomainInvariants(all);
   writeAll(all);
 
   setAreaStatus(base.area_id, "em_adocao");
   return base;
 }
 
-/* =========================
-   VISTORIA GATE (laudo_emitido)
-   - heurística: encontra em localStorage qualquer coleção com "vist"
-========================= */
 function hasLaudoEmitidoForProposal(proposalId: string): boolean {
   const seedKeys = ["mvp_vistorias_v1", "mvp_vistorias"];
   const keys = Array.from(
@@ -313,8 +290,6 @@ function hasLaudoEmitidoForProposal(proposalId: string): boolean {
 
       const status = String((v as any)?.status ?? "");
       if (status === "laudo_emitido") return true;
-
-      // fallback: se existir laudo estruturado
       if ((v as any)?.laudo?.emitido_em) return true;
     }
   }
@@ -322,16 +297,13 @@ function hasLaudoEmitidoForProposal(proposalId: string): boolean {
   return false;
 }
 
-/* =========================
-   MOVE / REQUEST_ADJUSTMENTS
-========================= */
 export type ProposalExtraEventInput = {
-  type: string; // ex.: "override_no_vistoria"
+  type: string;
   at?: string;
   note?: string;
   from?: KanbanColuna;
   to?: KanbanColuna;
-  meta?: Record<string, any>; // ex.: { gate_from, gate_to }
+  meta?: Record<string, any>;
 };
 
 function ensureMoveAfterExtras(moveIso: string, extras: ProposalExtraEventInput[]) {
@@ -370,22 +342,25 @@ export function moveProposal(
   const current = all[idx];
   const from = current.kanban_coluna;
 
-  if (isClosed(current) && to !== current.kanban_coluna) {
+  if (isProposalClosed(current) && to !== current.kanban_coluna) {
     throw new Error("Proposta encerrada. Não é possível mover.");
   }
 
-  // validações básicas
-  if (to === "ajustes") {
-    const t0 = String(note ?? "").trim();
-    if (!t0) throw new Error("Motivo de ajustes é obrigatório.");
-  }
-  if (to === "indeferida") {
-    const t0 = String(note ?? "").trim();
-    if (!t0) throw new Error("Motivo do indeferimento é obrigatório.");
+  if (!canTransitionProposal(actor_role, from, to)) {
+    throw new Error("Transição não permitida para este perfil/etapa.");
   }
 
-  // ===== ✅ GATE (AGORA NO PONTO CERTO):
-  // SEMAD -> ECOS (encaminhar p/ ECOS) sem laudo_emitido => exigir confirmação + motivo e logar override
+  if (requiresNoteForProposalTransition(from, to)) {
+    const t0 = String(note ?? "").trim();
+    if (!t0) {
+      throw new Error(
+        to === "indeferida"
+          ? "Motivo do indeferimento é obrigatório."
+          : "Motivo dos ajustes é obrigatório."
+      );
+    }
+  }
+
   const isGateTransition = from === "analise_semad" && to === "analise_ecos";
   const needsGate = isGateTransition && !hasLaudoEmitidoForProposal(current.id);
 
@@ -407,7 +382,6 @@ export function moveProposal(
       return current;
     }
 
-    // evento override ANTES do move
     extra.unshift({
       type: "override_no_vistoria",
       at: nowIso(),
@@ -418,12 +392,10 @@ export function moveProposal(
     });
   }
 
-  // timestamps (garante move depois dos extras)
   let tMove = ensureMoveAfterExtras(nowIso(), extra);
 
   let next: PropostaAdocao = { ...current, kanban_coluna: to, updated_at: tMove };
 
-  // 1) extras (ex.: override_no_vistoria) — ANTES do move
   if (extra.length > 0) {
     for (const ex of extra) {
       const at = String(ex.at ?? nowIso());
@@ -443,7 +415,6 @@ export function moveProposal(
     }
   }
 
-  // 2) move
   next = pushEvent(
     next,
     {
@@ -457,7 +428,6 @@ export function moveProposal(
     tMove
   );
 
-  // 3) request_adjustments
   if (to === "ajustes") {
     next = pushEvent(
       next,
@@ -473,7 +443,6 @@ export function moveProposal(
     );
   }
 
-  // 4) decisões terminais
   if (to === "termo_assinado") {
     next = { ...next, closed_status: "approved", closed_at: tMove };
     next = pushEvent(
@@ -504,6 +473,7 @@ export function moveProposal(
   }
 
   all[idx] = next;
+  assertDomainInvariants(all);
   writeAll(all);
 
   if (to === "termo_assinado") setAreaStatus(next.area_id, "adotada");
@@ -512,9 +482,6 @@ export function moveProposal(
   return next;
 }
 
-/* =========================
-   ADOTANTE: ATENDER AJUSTES E REENVIAR
-========================= */
 export function adopterUpdateAndResubmitFromAdjustments(
   id: string,
   input: {
@@ -534,7 +501,7 @@ export function adopterUpdateAndResubmitFromAdjustments(
   const current = all[idx];
 
   if (current.kanban_coluna !== "ajustes") throw new Error("A proposta não está em ajustes.");
-  if (isClosed(current)) throw new Error("Proposta encerrada.");
+  if (isProposalClosed(current)) throw new Error("Proposta encerrada.");
 
   if (current.owner_role && current.owner_role !== role) {
     throw new Error("Você não é o responsável por esta proposta.");
@@ -579,6 +546,7 @@ export function adopterUpdateAndResubmitFromAdjustments(
   );
 
   all[idx] = next;
+  assertDomainInvariants(all);
   writeAll(all);
 
   return next;
@@ -588,9 +556,6 @@ export function resubmitAfterAdjustments(id: string, actor_role: string) {
   return adopterUpdateAndResubmitFromAdjustments(id, {}, actor_role);
 }
 
-/* =========================
-   EVENTOS (BASE PARA RELATÓRIOS/SLA)
-========================= */
 type EventRow = ProposalEvent & {
   proposal_id: string;
   codigo_protocolo: string;
@@ -646,11 +611,9 @@ export function computeConsolidatedByPeriod(fromIso: string, toIso: string) {
   const evs = listEventRowsBetween(fromIso, toIso);
 
   const protocols_created = evs.filter((e) => e.type === "create").length;
-
   const entered_semad = evs.filter((e) => e.type === "move" && e.to === "analise_semad").length;
   const entered_ecos = evs.filter((e) => e.type === "move" && e.to === "analise_ecos").length;
   const entered_gov = evs.filter((e) => e.type === "move" && e.to === "decisao").length;
-
   const adjustments_requested = evs.filter((e) => e.type === "request_adjustments").length;
 
   const byProposal = new Map<string, EventRow[]>();
@@ -724,7 +687,6 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
   }
 
   const cols: KanbanColuna[] = [...ALLOWED_COLS];
-
   const bucket: Record<string, number[]> = {};
   for (const c of cols) bucket[c] = [];
 
@@ -778,8 +740,7 @@ export function computeSlaByColumn(fromIso: string, toIso: string) {
     return sorted[idx];
   };
 
-  const by_column: Record<string, { n: number; p50_ms: number | null; p80_ms: number | null; p95_ms: number | null }> =
-    {};
+  const by_column: Record<string, { n: number; p50_ms: number | null; p80_ms: number | null; p95_ms: number | null }> = {};
 
   let samples = 0;
   for (const c of cols) {

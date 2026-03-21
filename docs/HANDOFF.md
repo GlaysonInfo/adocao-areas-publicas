@@ -23,196 +23,280 @@ Portal de adoção de áreas (adotante / gestores / admin), com Kanban + relató
 - Relatórios: src/pages/reports/ReportsPage.tsx
 
 ## Próximos passos (placeholder)
-- Relatórios por período baseados em eventos + SLA por coluna (P50/P80/P95 + violações).
-1) Modelo mínimo de Vistoria (MVP) — mensurável e orientado a evidências
-1.1 Entidade principal
+Próximos passos (priorizados) + DoD — versão “produção” (baseado no estado atual)
 
-vistoria (armazenada em localStorage):
+Premissas observadas (estado atual):
 
-id
+Frontend (React/Vite) com fluxos completos: Áreas, Propostas/Kanban, Solicitações de área, Vistorias, Relatórios.
 
-proposal_id (FK lógica)
+Regras e métricas dependem de event-log (history/events) e persistem em localStorage.
 
-fase: "analise" | "vigencia"
+Necessário: backend + persistência + deploy + anexos reais + auditoria server-side.
 
-analise: antes do termo
+P0 — Bloqueadores de produção (ordem recomendada)
+1) Backend API + Contratos + Validação de entrada (Impacto 5 | Risco 5 | Custo 4)
 
-vigencia: após termo/adoção vigente
+Entregáveis (repo):
 
-status: "rascunho" | "agendada" | "executada" | "laudo_emitido" | "cancelada" (opcional)
+apps/api/ (ou /api se não usar monorepo)
 
-local_texto (obrigatório)
+OpenAPI (openapi.json) ou rota /docs
 
-geo?: { lat, lng, accuracy_m?, captured_at } (opcional, capturado via navegador)
+Middleware de validação (Zod) + erros padronizados
 
-agendada_para? (ISO)
+DoD (mensurável):
 
-executada_em? (ISO)
+GET /health retorna 200
 
-checklist_json (MVP: objeto livre)
+GET /version retorna commit SHA + env
 
-observacoes?
+Todos endpoints retornam erro em formato único (ex.: { code, message, traceId })
 
-laudo? (pode ser embutido no MVP):
+1 suíte de testes de contrato (smoke) cobrindo rotas principais
 
-conclusao: "favoravel" | "favoravel_com_ressalvas" | "desfavoravel"
+2) Persistência com Postgres + Migrações (Impacto 5 | Risco 5 | Custo 3)
 
-recomendacoes?
+Entregáveis (repo):
 
-emitido_em
+infra/docker-compose.yml (postgres + adminer/pgadmin opcional)
 
-created_at, updated_at
+ORM/migrations: Prisma ou Drizzle (1 escolha)
 
-history[] (event-log)
+Schema inicial com tabelas mínimas:
 
-1.2 Event-log (fonte de verdade)
+areas
 
-Cada evento deve ter (no mínimo):
+proposals, proposal_events
 
-id, type, at, actor_role
+vistorias, vistoria_events
 
-payload específico quando aplicável
+area_requests, area_request_events
 
-Eventos mínimos:
+users, sessions (ou refresh tokens)
 
-create
+attachments (metadados)
 
-schedule (inclui agendada_para)
+DoD (mensurável):
 
-execute (inclui executada_em e geo?)
+db:migrate cria schema do zero (sem intervenção manual)
 
-issue_laudo (inclui conclusao e recomendacoes?)
+db:reset recria schema e executa seed mínimo
 
-Por que assim? Porque permite SLA e produtividade depois sem inferência visual.
+Índices para período/evento existem (por at, proposal_id, status)
 
-2) Regras de transição (testáveis)
-2.1 Transições válidas
+Backup/restore testado em staging (evidência: log + timestamp)
 
-create → status = rascunho
+3) Auth real + RBAC server-side (Impacto 5 | Risco 4 | Custo 3)
 
-schedule:
+Entregáveis (repo):
 
-pré-condição: status ∈ {rascunho, agendada}
+apps/api/src/modules/auth/*
 
-pós-condição: status = agendada e agendada_para definido
+apps/api/src/middlewares/rbac.ts
 
-execute:
+Modelo users com role (adotante_pf/pj, gestor_*, admin)
 
-pré-condição: status ∈ {rascunho, agendada}
+DoD (mensurável):
 
-pós-condição: status = executada e executada_em definido
+Login gera sessão/token; role vem do backend
 
-issue_laudo:
+Rotas protegidas por role (API e UI)
 
-pré-condição: status = executada
+Eventos gravam actor_id + actor_role server-side (não confiando no cliente)
 
-pós-condição: status = laudo_emitido e laudo.emitido_em definido
+Testes: 1 caso por role negado/permitido em endpoint crítico
 
-2.2 Integridade com proposta
+4) Event-log canônico no backend (append-only) (Impacto 5 | Risco 4 | Custo 3)
 
-Vistoria sempre referencia proposal_id.
+Entregáveis (repo):
 
-Em fase “analise”, vínculo primário é a proposta em analise_semad (ou no mínimo “em andamento”).
+Escrita de eventos em tabelas *_events (append-only)
 
-Em fase “vigencia”, permitir vistoria mesmo com proposta encerrada (term assinado), mas ainda vinculada ao mesmo proposal_id.
+Regras de negócio no backend (fonte de verdade)
 
-3) Arquivos a criar/alterar (WEB)
-3.1 Novos arquivos
+DoD (mensurável):
 
-Domínio
+Toda transição relevante gera evento (create/move/decision/override_no_vistoria/etc.)
 
-src/domain/vistoria.ts
+Relatórios por período rodam apenas por replay do event-log
 
-Storage (localStorage + subscribe)
+Idempotência: replay do mesmo conjunto de eventos ⇒ mesmas contagens (teste automatizado)
 
-src/storage/vistorias.ts
+P1 — Funcionalidades para uso real
+5) Anexos reais (S3/R2/Storage gerenciado) (Impacto 4 | Risco 3 | Custo 4)
 
-key sugerida: mvp_vistorias_v1
+Entregáveis (repo):
 
-funções mínimas:
+apps/api/src/modules/attachments/*
 
-listVistoriasByProposal(proposal_id)
+Provider S3 compatível (AWS S3 / Cloudflare R2 / Supabase Storage)
 
-getVistoriaById(id)
+DoD (mensurável):
 
-createVistoria(input, actor_role)
+Upload multipart funciona + grava metadados no DB
 
-scheduleVistoria(id, agendada_para, actor_role)
+Download via URL assinada (expiração) ou proxy autenticado
 
-executeVistoria(id, {local_texto, geo?, checklist_json?, observacoes?}, actor_role)
+Validações de tipo e tamanho (bloqueio)
 
-issueLaudo(id, {conclusao, recomendacoes?}, actor_role)
+Evidência: anexos persistem entre dispositivos/sessões
 
-subscribeVistorias(cb)
+6) Relatórios/CSV server-side (Impacto 4 | Risco 3 | Custo 3)
 
-Páginas (Gestor)
+Entregáveis (repo):
 
-src/pages/vistorias/ManagerVistoriasPage.tsx (lista por proposta)
+apps/api/src/modules/reports/*
 
-src/pages/vistorias/ManagerVistoriaNewPage.tsx
+Endpoints para consolidado + listas + CSV
 
-src/pages/vistorias/ManagerVistoriaDetailPage.tsx
+DoD (mensurável):
 
-3.2 Alterar páginas existentes
+/reports?from&to reproduz as mesmas métricas que hoje (por evento)
 
-Gestor
+CSV exporta rastreabilidade (protocolo, timestamps, ator, motivo quando aplicável)
 
-src/pages/ManagerProposalDetailPage.tsx
+Teste: janela de tempo fixa ⇒ saída determinística
 
-botão/aba: “Vistorias” → abre /gestor/vistorias?proposal_id=...
+7) Migração localStorage → DB (import controlado) (Impacto 4 | Risco 4 | Custo 3)
 
-ou embed simples: lista de vistorias + CTA “Nova vistoria”
+Entregáveis (repo):
 
-Adotante
+Script CLI: apps/api/scripts/import_localstorage_dump.ts
 
-src/pages/MyProposalDetailPage.tsx
+Endpoint interno (admin) opcional: POST /admin/import
 
-seção “Vistorias” (somente leitura):
+DoD (mensurável):
 
-status atual (rascunho/agendada/executada/laudo_emitido)
+Import valida schema + invariantes (1 proposta aberta por área, etc.)
 
-se laudo_emitido, exibir conclusao, emitido_em, recomendacoes
+Import é idempotente (rodar 2x não duplica)
 
-isso é a devolutiva verificável
+Relatório de migração (contagens antes/depois + erros)
 
-3.3 Rotas
+P2 — Operação, qualidade e governança
+8) CI/CD + ambientes (staging/prod) (Impacto 4 | Risco 2 | Custo 2)
 
-src/routes/AppRoutes.tsx (dentro de <RequireManager/>)
+Entregáveis (repo):
 
-/gestor/vistorias
+GitHub Actions: lint/test/build/migrate(dry-run)
 
-/gestor/vistorias/nova
+Deploy staging automático; prod com aprovação
 
-/gestor/vistorias/:id
+DoD (mensurável):
 
-(Opcional: link no menu para gestor, mas o mais consistente é entrar via detalhe da proposta.)
+PR bloqueia merge se falhar: lint + test + build
 
-4) Critérios de aceite (somente por evidência em localStorage)
+Staging atualiza a cada merge na main
 
-Criar vistoria:
+Prod com tag/versionamento (release)
 
-existe um item em mvp_vistorias_v1 com proposal_id = X
+9) Observabilidade (logs, erros, métricas) (Impacto 4 | Risco 2 | Custo 2)
 
-history contém create
+Entregáveis (repo):
 
-Agendar:
+Logs estruturados (JSON) com traceId
 
-status = "agendada" e agendada_para definido
+Sentry (erros) + métricas básicas
 
-history contém schedule
+DoD (mensurável):
 
-Executar:
+Toda request tem traceId
 
-status = "executada" e executada_em definido
+Erro crítico gera evento observável (Sentry) com rota + usuário/role
 
-history contém execute
+Dashboard mínimo: taxa de erro + p95 latência
 
-Emitir laudo:
+10) Segurança mínima (Impacto 5 | Risco 3 | Custo 2)
 
-status = "laudo_emitido" e laudo.emitido_em definido
+Entregáveis (repo):
 
-history contém issue_laudo com conclusao
+Rate limit, CORS, headers, CSRF (se cookie), sanitização
 
-Devolutiva (adotante):
+Policy de permissões por recurso (RBAC + ownership)
 
-em /minhas-propostas/:id, a seção Vistorias reflete exatamente os campos acima (sem cálculo “por tela”).
+DoD (mensurável):
+
+Tentativa de acesso cruzado (adotante A lendo dados do adotante B) falha
+
+Upload bloqueia tipos proibidos e tamanhos acima do limite
+
+Auditoria server-side cobre ações críticas (quem/quando/o quê)
+
+Estrutura recomendada no repositório (para “fechar” o projeto)
+Opção A (recomendada): monorepo
+
+apps/web/ (atual)
+
+apps/api/ (novo)
+
+packages/shared/ (schemas Zod + tipos compartilhados)
+
+infra/ (compose, scripts)
+
+docs/ (as-built + roadmap)
+
+DoD (mensurável): build e deploy independentes de web e api.
+
+Decisão de banco (médio porte em 2025) — regra objetiva
+
+Escolher PostgreSQL se ≥ 3 condições verdadeiras:
+
+integridade relacional e constraints importam
+
+relatórios por período e consultas analíticas são core
+
+event-log auditável é core
+
+anexos + metadados + busca por filtros/joins é core
+
+evolução do schema precisa ser controlada por migrações
+
+Resultado por aderência ao problema atual: PostgreSQL = escolha padrão.
+
+Hospedagem (alvo mínimo) + evidências exigidas
+
+Frontend: Vercel/Netlify/Cloudflare Pages
+Backend: Render/Fly/Cloud Run/Railway (qualquer com logs e healthcheck)
+DB: Postgres gerenciado (Supabase/Neon/RDS/Cloud SQL/Render)
+Storage: S3/R2 (para anexos)
+CDN: implícita no provider do frontend
+
+DoD (mensurável):
+
+https://app.dominio (prod) + https://staging.app.dominio
+
+https://api.dominio/health (prod) + staging
+
+Backup automático do DB + restore testado
+
+Logs acessíveis e erro rastreável por traceId
+
+Domínio (registro + DNS + SSL) — evidência final
+
+Registro: Registro.br (se .br) ou provedor padrão (Cloudflare Registrar etc.)
+DNS: app, api, staging-app, staging-api
+SSL: automático via provedor (TLS gerenciado)
+
+DoD (mensurável):
+
+URL pública com HTTPS em produção e staging
+
+Cert válido + redirecionamento HTTP→HTTPS
+
+Ambiente staging isolado (DB e buckets separados)
+
+Próxima ação concreta (sequência mínima para iniciar P0)
+
+Criar apps/api/ com Node+TS (Fastify ou NestJS)
+
+Adicionar infra/docker-compose.yml (Postgres)
+
+Implementar schema + migrations (Prisma/Drizzle)
+
+Implementar Auth + RBAC + GET /health
+
+Portar regras críticas do storage/* para backend (event-log)
+
+Se for escolhido monorepo, o próximo commit pode ser:
+
+chore(repo): add apps/api + infra postgres + shared schemas (P0 scaffold)

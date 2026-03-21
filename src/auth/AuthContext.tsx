@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+﻿import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { AdotantePerfil, AdotanteRole } from "../domain/adopter";
 import { getAdopterProfile, upsertAdopterProfile } from "../storage/adopters";
 
@@ -79,7 +79,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRole: (nextRole) => {
         localStorage.setItem(STORAGE_KEY, nextRole);
         setRoleState(nextRole);
-        // adopterProfile é sincronizado pelo useEffect
       },
 
       logout: () => {
@@ -101,8 +100,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           whatsapp: data.whatsapp,
         });
 
-        setAdopterProfile(saved);
-        return saved;
+        if (!saved.ok) return null;
+
+        setAdopterProfile(saved.profile);
+        return saved.profile;
       },
     };
   }, [role, adopterProfile]);

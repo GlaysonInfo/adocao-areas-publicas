@@ -1,52 +1,72 @@
-# Architecture (as-built)
+# ARCHITECTURE (as-built)
 
-> **Gerado em:** 2025-12-19T04:50:01.249Z
+> **Gerado em:** 2026-03-21T10:46:00.493Z
 
-## Organização de pastas (esperada)
+## Visão geral
+A aplicação está organizada como front-end React/Vite com persistência local em `localStorage`, separando domínio, storage, páginas, autenticação e rotas.
+
+## Organização de pastas
 - `src/domain/`: tipos e contratos de dados
-- `src/storage/`: persistência em localStorage, regras e eventos
-- `src/pages/`: telas (UI)
+- `src/storage/`: persistência local, regras e eventos
+- `src/pages/`: telas
 - `src/auth/`: guards e AuthContext
 - `src/routes/`: rotas
 - `docs/`: documentação as-built
 
-## Contratos do localStorage (chaves encontradas)
+## Contratos do localStorage
 - `mvp_adopters_v1`
+- `mvp_area_requests_v1`
 - `mvp_areas_v1`
 - `mvp_audit_v1`
 - `mvp_events_v1`
 - `mvp_proposals_v1`
 - `mvp_role`
+- `mvp_vistorias_v1`
 
-### Observações importantes
-- Chaves com template (ex.: `mvp_protocolo_seq_${year}`) são dinâmicas.
-- Payloads podem conter dados sensíveis (e-mail/telefone). Use sempre snapshot **sanitizado**.
+### Observações
+- Chaves com template, como `mvp_protocolo_seq_${year}`, são dinâmicas.
+- Payloads podem conter dados sensíveis; use sempre snapshot sanitizado.
 
-## Schema (alto nível)
+## Modelo de dados em alto nível
+
 ### Áreas
 - Key típica: `mvp_areas_v1`
 - Tipo: `AreaPublica[]`
-- Campos relevantes: id, codigo, nome, tipo, bairro, logradouro, metragem_m2, status, ativo, restricoes, geo_arquivo, created_at, updated_at
+- Campos relevantes:
+  - id
+  - codigo
+  - nome
+  - tipo
+  - bairro
+  - logradouro
+  - metragem_m2
+  - status
+  - ativo
+  - restricoes
+  - geo_arquivo
+  - created_at
+  - updated_at
 
 ### Propostas
 - Key típica: `mvp_proposals_v1`
 - Tipo: `PropostaAdocao[]`
 - Campos críticos:
-  - `codigo_protocolo` (imutável após create)
-  - `kanban_coluna` (estado atual)
-  - `history[]` (event log: create/move/request_adjustments/decision)
-  - `closed_status/closed_at` (quando encerrada)
+  - `codigo_protocolo`
+  - `kanban_coluna`
+  - `history[]`
+  - `closed_status`
+  - `closed_at`
 
-## Invariantes (devem sempre ser verdade)
-1) **Nunca** existir mais de 1 proposta aberta por `area_id`.
-2) Ao criar proposta: área muda para **em_adocao**.
-3) Ao assinar termo: área muda para **adotada**.
-4) Ao indeferir: área volta para **disponivel**.
-5) Mover para **ajustes** exige `note` não-vazia (motivo).
-6) Somente o **dono** (adotante) pode editar e reenviar quando em ajustes.
+## Invariantes de domínio
+1. Nunca existir mais de 1 proposta aberta por `area_id`.
+2. Ao criar proposta, a área muda para **em_adocao**.
+3. Ao assinar termo, a área muda para **adotada**.
+4. Ao indeferir, a área volta para **disponivel**.
+5. Mover para **ajustes** exige `note` não vazia.
+6. Somente o dono pode editar e reenviar quando em ajustes.
 
-## Snapshot sanitizado do localStorage (browser)
-Cole este snippet no DevTools Console e cole o resultado em `docs/AS_BUILT.md`.
+## Segurança e sanitização
+Cole o snippet abaixo no DevTools Console e depois cole a saída em `docs/AS_BUILT.md`.
 
 ```js
 (() => {
@@ -78,6 +98,7 @@ Cole este snippet no DevTools Console e cole o resultado em `docs/AS_BUILT.md`.
 
   const keys = Object.keys(localStorage).sort();
   const dump = {};
+
   for (const k of keys) {
     const raw = localStorage.getItem(k);
     if (raw == null) continue;
@@ -88,8 +109,7 @@ Cole este snippet no DevTools Console e cole o resultado em `docs/AS_BUILT.md`.
     dump[k] = sanitize(parsed);
   }
 
-  const md =
-`### localStorage snapshot (sanitizado)
+  const md = `### localStorage snapshot (sanitizado)
 \`\`\`json
 ${JSON.stringify(dump, null, 2)}
 \`\`\``;
@@ -105,5 +125,6 @@ ${JSON.stringify(dump, null, 2)}
 })();
 ```
 
-## Notas de migração/normalização
-- Se versões antigas existirem sem `history`, o storage normaliza criando um evento `create` mínimo para suportar relatórios/SLA.
+## Notas de migração e normalização
+- Se existirem versões antigas sem `history`, o storage pode normalizar criando um evento `create` mínimo.
+- A migração futura para backend deve preservar o event-log como fonte de verdade.

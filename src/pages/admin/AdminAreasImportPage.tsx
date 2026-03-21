@@ -1,4 +1,4 @@
-// src/pages/admin/AdminAreasImportPage.tsx
+﻿// src/pages/admin/AdminAreasImportPage.tsx
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AreaStatus } from "../../domain/area";
@@ -11,7 +11,7 @@ type ParseResult = {
 };
 
 type PreviewRow = {
-  rowNumber: number; // linha real do CSV (começa em 2)
+  rowNumber: number; // linha real do CSV (comeÃ§a em 2)
   action: "criar" | "atualizar" | "pular";
   errors: string[];
   values: Record<string, string>;
@@ -19,7 +19,6 @@ type PreviewRow = {
 
 function stripAccents(s: string) {
   try {
-    // @ts-expect-error unicode property escapes ok em ambiente moderno
     return String(s).normalize("NFD").replace(/\p{Diacritic}/gu, "");
   } catch {
     return String(s);
@@ -49,7 +48,7 @@ function normalizeStatus(raw: string): AreaStatus | null {
     .replace(/\s+/g, "_");
 
   if (s === "disponivel" || s === "disponivel_para_adocao") return "disponivel";
-  if (s === "em_adocao" || s === "em_adoção" || s === "em_adoacao") return "em_adocao";
+  if (s === "em_adocao" || s === "em_adoÃ§Ã£o" || s === "em_adoacao") return "em_adocao";
   if (s === "adotada" || s === "adotado") return "adotada";
 
   return null;
@@ -59,7 +58,7 @@ function parseBool(raw: string | undefined, fallback: boolean) {
   if (raw == null) return fallback;
   const s = stripAccents(String(raw)).toLowerCase().trim();
   if (["1", "true", "sim", "s", "ativo", "ativa", "yes", "y"].includes(s)) return true;
-  if (["0", "false", "nao", "não", "n", "inativo", "inativa", "no"].includes(s)) return false;
+  if (["0", "false", "nao", "nÃ£o", "n", "inativo", "inativa", "no"].includes(s)) return false;
   return fallback;
 }
 
@@ -116,7 +115,7 @@ function parseCSV(text: string): ParseResult {
 }
 
 function buildTemplateCSV() {
-  // mínimo + recomendados
+  // mÃ­nimo + recomendados
   const headers = [
     "codigo",
     "nome",
@@ -133,13 +132,13 @@ function buildTemplateCSV() {
   const sample = [
     [
       "BETIM-AREA-0001",
-      "Praça da Matriz",
-      "Praça",
+      "PraÃ§a da Matriz",
+      "PraÃ§a",
       "Centro",
       "Av. Principal, s/n",
       "850",
       "disponivel",
-      "Não permite estruturas permanentes.",
+      "NÃ£o permite estruturas permanentes.",
       "sim",
       "-19,965",
       "-44,199",
@@ -152,7 +151,7 @@ function buildTemplateCSV() {
       "Av. das Palmeiras, 1200",
       "420",
       "em_adocao",
-      "Manter visibilidade de sinalização viária.",
+      "Manter visibilidade de sinalizaÃ§Ã£o viÃ¡ria.",
       "sim",
       "",
       "",
@@ -187,7 +186,7 @@ export function AdminAreasImportPage() {
   const headerErrors = useMemo(() => {
     if (!parsed) return [];
     const missing = requiredHeaders.filter((h) => !parsed.headers.includes(h));
-    return missing.map((h) => `Cabeçalho obrigatório ausente: "${h}".`);
+    return missing.map((h) => `CabeÃ§alho obrigatÃ³rio ausente: "${h}".`);
   }, [parsed]);
 
   const preview = useMemo(() => {
@@ -226,22 +225,22 @@ export function AdminAreasImportPage() {
       if (!tipo) errors.push("Sem 'tipo'.");
       if (!bairro) errors.push("Sem 'bairro'.");
       if (!logradouro) errors.push("Sem 'logradouro'.");
-      if (metr == null) errors.push("metragem_m2 inválida (use número; aceita vírgula).");
-      if (!st) errors.push('status inválido (use: "disponivel" | "em_adocao" | "adotada").');
+      if (metr == null) errors.push("metragem_m2 invÃ¡lida (use nÃºmero; aceita vÃ­rgula).");
+      if (!st) errors.push('status invÃ¡lido (use: "disponivel" | "em_adocao" | "adotada").');
 
       // campos opcionais
       if (values.latitude_centro) {
         const lat = parseNumberBR(values.latitude_centro);
-        if (lat == null) errors.push("latitude_centro inválida.");
+        if (lat == null) errors.push("latitude_centro invÃ¡lida.");
       }
       if (values.longitude_centro) {
         const lon = parseNumberBR(values.longitude_centro);
-        if (lon == null) errors.push("longitude_centro inválida.");
+        if (lon == null) errors.push("longitude_centro invÃ¡lida.");
       }
 
       if (values.ativo) {
-        // só valida “se parece boolean”
-        parseBool(values.ativo, true); // não gera erro, mas “normaliza”
+        // sÃ³ valida â€œse parece booleanâ€
+        parseBool(values.ativo, true); // nÃ£o gera erro, mas â€œnormalizaâ€
       }
 
       let action: PreviewRow["action"] = "pular";
@@ -300,12 +299,12 @@ export function AdminAreasImportPage() {
 
     const hasAnyValid = preview.rows.some((r) => r.action === "criar" || r.action === "atualizar");
     if (!hasAnyValid) {
-      alert("Não há linhas válidas para aplicar (todas estão como 'Pular'). Ajuste o CSV e tente novamente.");
+      alert("NÃ£o hÃ¡ linhas vÃ¡lidas para aplicar (todas estÃ£o como 'Pular'). Ajuste o CSV e tente novamente.");
       return;
     }
 
     const ok = confirm(
-      `Aplicar importação?\n\nCriar: ${preview.counts.criar}\nAtualizar: ${preview.counts.atualizar}\nPular: ${preview.counts.pular}\n\nIsso atualizará o armazenamento local (MVP).`
+      `Aplicar importaÃ§Ã£o?\n\nCriar: ${preview.counts.criar}\nAtualizar: ${preview.counts.atualizar}\nPular: ${preview.counts.pular}\n\nIsso atualizarÃ¡ o armazenamento local (MVP).`
     );
     if (!ok) return;
 
@@ -323,9 +322,9 @@ export function AdminAreasImportPage() {
       <div className="card pad">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ marginTop: 0 }}>Admin · Importar Áreas (CSV)</h2>
+            <h2 style={{ marginTop: 0 }}>Admin Â· Importar Ãreas (CSV)</h2>
             <p style={{ marginTop: 6 }}>
-              Faça upload do CSV, valide no preview e aplique para criar/atualizar áreas (chave: <strong>codigo</strong>).
+              FaÃ§a upload do CSV, valide no preview e aplique para criar/atualizar Ã¡reas (chave: <strong>codigo</strong>).
             </p>
           </div>
 
@@ -357,13 +356,13 @@ export function AdminAreasImportPage() {
 
             <div style={{ opacity: 0.85, lineHeight: 1.5 }}>
               <div>
-                <strong>Obrigatórios:</strong> {requiredHeaders.join(", ")}
+                <strong>ObrigatÃ³rios:</strong> {requiredHeaders.join(", ")}
               </div>
               <div>
                 <strong>Status aceitos:</strong> disponivel | em_adocao | adotada
               </div>
               <div>
-                <strong>Opcional:</strong> restricoes, ativo (sim/não), latitude_centro, longitude_centro
+                <strong>Opcional:</strong> restricoes, ativo (sim/nÃ£o), latitude_centro, longitude_centro
               </div>
             </div>
           </div>
@@ -372,13 +371,13 @@ export function AdminAreasImportPage() {
         {parsed ? (
           <>
             <div style={{ marginTop: 14 }}>
-              <strong>Detectado:</strong> delimitador <code>{parsed.delimiter}</code> · colunas{" "}
-              <strong>{parsed.headers.length}</strong> · linhas <strong>{parsed.rows.length}</strong>
+              <strong>Detectado:</strong> delimitador <code>{parsed.delimiter}</code> Â· colunas{" "}
+              <strong>{parsed.headers.length}</strong> Â· linhas <strong>{parsed.rows.length}</strong>
             </div>
 
             {headerErrors.length > 0 ? (
               <div className="card pad" style={{ marginTop: 12, background: "rgba(255,255,255,.72)" }}>
-                <h3 style={{ marginTop: 0 }}>Problemas no cabeçalho</h3>
+                <h3 style={{ marginTop: 0 }}>Problemas no cabeÃ§alho</h3>
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {headerErrors.map((e, i) => (
                     <li key={i}>{e}</li>
@@ -389,10 +388,10 @@ export function AdminAreasImportPage() {
               <div className="card pad" style={{ marginTop: 12, background: "rgba(255,255,255,.72)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div>
-                    <h3 style={{ marginTop: 0 }}>Preview (validação)</h3>
+                    <h3 style={{ marginTop: 0 }}>Preview (validaÃ§Ã£o)</h3>
                     <p style={{ marginTop: 6 }}>
-                      Ações previstas: <strong>Criar</strong> ({preview.counts.criar}) ·{" "}
-                      <strong>Atualizar</strong> ({preview.counts.atualizar}) · <strong>Pular</strong> ({preview.counts.pular})
+                      AÃ§Ãµes previstas: <strong>Criar</strong> ({preview.counts.criar}) Â·{" "}
+                      <strong>Atualizar</strong> ({preview.counts.atualizar}) Â· <strong>Pular</strong> ({preview.counts.pular})
                     </p>
                   </div>
 
@@ -402,9 +401,9 @@ export function AdminAreasImportPage() {
                       className="btn btn--primary"
                       disabled={!canApply || busy}
                       onClick={applyImport}
-                      title={!canApply ? "Corrija o cabeçalho antes de aplicar." : "Aplicar importação"}
+                      title={!canApply ? "Corrija o cabeÃ§alho antes de aplicar." : "Aplicar importaÃ§Ã£o"}
                     >
-                      {busy ? "Aplicando..." : "Aplicar importação"}
+                      {busy ? "Aplicando..." : "Aplicar importaÃ§Ã£o"}
                     </button>
                   </div>
                 </div>
@@ -413,7 +412,7 @@ export function AdminAreasImportPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
                     <thead>
                       <tr>
-                        {["Linha", "Ação", "Código", "Nome", "Tipo", "Bairro", "Logradouro", "Metragem", "Status", "Ativo", "Erros"].map(
+                        {["Linha", "AÃ§Ã£o", "CÃ³digo", "Nome", "Tipo", "Bairro", "Logradouro", "Metragem", "Status", "Ativo", "Erros"].map(
                           (h) => (
                             <th
                               key={h}
@@ -445,28 +444,28 @@ export function AdminAreasImportPage() {
                               <strong>{actionLabel}</strong>
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.codigo || <span style={{ opacity: 0.6 }}>—</span>}
+                              {v.codigo || <span style={{ opacity: 0.6 }}>â€”</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.nome || <span style={{ opacity: 0.6 }}>—</span>}
+                              {v.nome || <span style={{ opacity: 0.6 }}>â€”</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.tipo || <span style={{ opacity: 0.6 }}>—</span>}
+                              {v.tipo || <span style={{ opacity: 0.6 }}>â€”</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.bairro || <span style={{ opacity: 0.6 }}>—</span>}
+                              {v.bairro || <span style={{ opacity: 0.6 }}>â€”</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.logradouro || <span style={{ opacity: 0.6 }}>—</span>}
+                              {v.logradouro || <span style={{ opacity: 0.6 }}>â€”</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.metragem_m2 || <span style={{ opacity: 0.6 }}>—</span>}
+                              {v.metragem_m2 || <span style={{ opacity: 0.6 }}>â€”</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.status || <span style={{ opacity: 0.6 }}>—</span>}
+                              {v.status || <span style={{ opacity: 0.6 }}>â€”</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.ativo ? String(parseBool(v.ativo, true) ? "Sim" : "Não") : <span style={{ opacity: 0.6 }}>—</span>}
+                              {v.ativo ? String(parseBool(v.ativo, true) ? "Sim" : "NÃ£o") : <span style={{ opacity: 0.6 }}>â€”</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
                               {r.errors.length === 0 ? (
@@ -476,7 +475,7 @@ export function AdminAreasImportPage() {
                                   {r.errors.slice(0, 3).map((e, i) => (
                                     <li key={i}>{e}</li>
                                   ))}
-                                  {r.errors.length > 3 ? <li>+{r.errors.length - 3}…</li> : null}
+                                  {r.errors.length > 3 ? <li>+{r.errors.length - 3}â€¦</li> : null}
                                 </ul>
                               )}
                             </td>
@@ -497,9 +496,9 @@ export function AdminAreasImportPage() {
 
             {report ? (
               <div className="card pad" style={{ marginTop: 12, background: "rgba(255,255,255,.72)" }}>
-                <h3 style={{ marginTop: 0 }}>Relatório final</h3>
+                <h3 style={{ marginTop: 0 }}>RelatÃ³rio final</h3>
                 <p style={{ marginTop: 6 }}>
-                  <strong>Criadas:</strong> {report.created} · <strong>Atualizadas:</strong> {report.updated} ·{" "}
+                  <strong>Criadas:</strong> {report.created} Â· <strong>Atualizadas:</strong> {report.updated} Â·{" "}
                   <strong>Puladas:</strong> {report.skipped}
                 </p>
 
@@ -535,12 +534,12 @@ export function AdminAreasImportPage() {
                     ) : null}
                   </>
                 ) : (
-                  <p style={{ marginTop: 10, opacity: 0.85 }}>Importação concluída sem erros.</p>
+                  <p style={{ marginTop: 10, opacity: 0.85 }}>ImportaÃ§Ã£o concluÃ­da sem erros.</p>
                 )}
 
                 <div style={{ marginTop: 12 }}>
                   <Link className="btn btn--primary" to="/admin/areas">
-                    Voltar para Admin · Áreas
+                    Voltar para Admin Â· Ãreas
                   </Link>
                 </div>
               </div>

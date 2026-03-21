@@ -1,4 +1,4 @@
-// src/storage/vistorias.ts
+﻿// src/storage/vistorias.ts
 import type {
   Vistoria,
   VistoriaAnexoMeta,
@@ -139,7 +139,7 @@ function normHistory(raw: any): VistoriaEvent[] {
 
       return {
         id: String(e.id ?? safeUuid()),
-        type,
+        type: type as VistoriaEvent["type"],
         at,
         actor_role,
         from_status: e.from_status ? normStatus(e.from_status) : undefined,
@@ -205,7 +205,7 @@ function pushEvent(v: Vistoria, ev: Omit<VistoriaEvent, "id">): Vistoria {
       {
         id: safeUuid(),
         ...ev,
-      },
+      } as VistoriaEvent,
     ],
   };
   next.history.sort((a, b) => String(a.at).localeCompare(String(b.at)));
@@ -422,13 +422,14 @@ export function emitVistoriaLaudo(id: string, laudo: Omit<VistoriaLaudo, "respon
     responsavel_role: actor_role || "unknown",
   };
 
-  // status: realizada -> laudo_emitido (regra)
+  // status: realizada -> laudo_emitido
   let next: Vistoria = { ...current, laudo: nextLaudo, updated_at: nowIso() };
   next = updateVistoriaStatus(id, "laudo_emitido", actor_role, "Laudo emitido");
 
-  // updateVistoriaStatus já persistiu; vamos reabrir e setar laudo corretamente:
+  // updateVistoriaStatus já persistiu; reabre e registra o evento emit_laudo
   const all2 = listVistorias();
   const idx2 = all2.findIndex((v) => v.id === id);
+
   if (idx2 >= 0) {
     all2[idx2] = {
       ...all2[idx2],
@@ -438,13 +439,14 @@ export function emitVistoriaLaudo(id: string, laudo: Omit<VistoriaLaudo, "respon
         ...(all2[idx2].history ?? []),
         {
           id: safeUuid(),
-          type: "emit_laudo",
+          type: "emit_laudo" as const,
           at: nowIso(),
           actor_role: actor_role || "unknown",
           note: `Conclusão: ${nextLaudo.conclusao}`,
-        },
+        } as VistoriaEvent,
       ].sort((a, b) => String(a.at).localeCompare(String(b.at))),
     };
+
     writeAll(all2);
     return all2[idx2];
   }

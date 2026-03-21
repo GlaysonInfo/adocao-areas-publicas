@@ -1,4 +1,4 @@
-// src/storage/adopters.ts
+﻿// src/storage/adopters.ts
 import type { AdotantePerfil, AdotanteRole } from "../domain/adopter";
 
 const KEY = "mvp_adopters_v1";
@@ -20,7 +20,6 @@ function readAll(): AdotantePerfil[] {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as AdotantePerfil[]) : [];
   } catch {
-    // se corrompeu, volta vazio (não derruba o app)
     return [];
   }
 }
@@ -34,7 +33,6 @@ function norm(s: unknown) {
 }
 
 function isValidEmail(email: string) {
-  // simples e suficiente pro MVP
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
@@ -45,14 +43,14 @@ export function getAdopterProfile(role: AdotanteRole): AdotantePerfil | null {
 
 export function upsertAdopterProfile(input: {
   role: AdotanteRole;
-  nome_razao_social: string;
+  nome_razao: string;
   email: string;
   celular: string;
   whatsapp?: string;
 }): { ok: true; profile: AdotantePerfil } | { ok: false; message: string } {
   try {
     const role = input.role;
-    const nome = norm(input.nome_razao_social);
+    const nome = norm(input.nome_razao);
     const email = norm(input.email).toLowerCase();
     const celular = norm(input.celular);
     const whatsapp = norm(input.whatsapp);
@@ -67,7 +65,7 @@ export function upsertAdopterProfile(input: {
     const next: AdotantePerfil = existing
       ? {
           ...existing,
-          nome_razao_social: nome,
+          nome_razao: nome,
           email,
           celular,
           whatsapp: whatsapp || undefined,
@@ -76,7 +74,7 @@ export function upsertAdopterProfile(input: {
       : {
           id: safeUuid(),
           role,
-          nome_razao_social: nome,
+          nome_razao: nome,
           email,
           celular,
           whatsapp: whatsapp || undefined,

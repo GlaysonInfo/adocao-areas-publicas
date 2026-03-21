@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Role } from "../auth/AuthContext";
 import { isManagerRole, useAuth } from "../auth/AuthContext";
@@ -33,7 +33,6 @@ export function LoginPage() {
 
   const [selected, setSelected] = useState<RoleOption>("adotante_pf");
 
-  // Cadastro mínimo do adotante
   const [nomeRazao, setNomeRazao] = useState("");
   const [email, setEmail] = useState("");
   const [celular, setCelular] = useState("");
@@ -42,7 +41,6 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Ao trocar PF/PJ, tenta carregar cadastro existente do storage
   useEffect(() => {
     setError(null);
 
@@ -50,7 +48,7 @@ export function LoginPage() {
 
     const existing = getAdopterProfile(selected);
     if (existing) {
-      setNomeRazao(existing.nome_razao_social ?? "");
+      setNomeRazao(existing.nome_razao ?? "");
       setEmail(existing.email ?? "");
       setCelular(existing.celular ?? "");
       setWhatsapp(existing.whatsapp ?? "");
@@ -76,7 +74,7 @@ export function LoginPage() {
       if (isAdopterRole(selected)) {
         const res = upsertAdopterProfile({
           role: selected,
-          nome_razao_social: nomeRazao,
+          nome_razao: nomeRazao,
           email,
           celular,
           whatsapp,
@@ -90,7 +88,7 @@ export function LoginPage() {
 
       setRole(selected);
       goHomeByRole(navigate, selected);
-    } catch (e) {
+    } catch {
       setError("Erro inesperado ao entrar. Verifique o console e tente novamente.");
     } finally {
       setSaving(false);

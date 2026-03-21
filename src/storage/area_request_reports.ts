@@ -1,5 +1,5 @@
-// src/storage/area_request_reports.ts
-import type { AreaRequest, AreaRequestEvent, SisGeoResultado } from "../domain/area_request";
+﻿// src/storage/area_request_reports.ts
+import type { AreaRequest, AreaRequestEvent } from "../domain/area_request";
 import { listAreaRequests } from "./area_requests";
 
 type RequestEventRow = AreaRequestEvent & {
@@ -57,8 +57,8 @@ function isSemadRole(role: string) {
 }
 
 /**
- * Métricas de Solicitações de Área (fora do Kanban).
- * Evidência: events em mvp_area_requests_v1[].history
+ * MÃ©tricas de SolicitaÃ§Ãµes de Ãrea (fora do Kanban).
+ * EvidÃªncia: events em mvp_area_requests_v1[].history
  */
 export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
   const reqs = listAreaRequests();
@@ -79,7 +79,7 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
     };
   }
 
-  // eventos no período
+  // eventos no perÃ­odo
   const evs = listRequestEventRowsBetween(fromIso, toIso);
 
   const qtd_solicitacoes_criadas = evs.filter((e) => e.type === "create").length;
@@ -90,7 +90,7 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
   const qtd_solicitacoes_deferidas = decisions.filter((e) => e.decision === "approved").length;
   const qtd_solicitacoes_indeferidas = decisions.filter((e) => e.decision === "rejected").length;
 
-  // tempos (por solicitação decidida)
+  // tempos (por solicitaÃ§Ã£o decidida)
   const dur_verificacao: number[] = [];
   const dur_resposta: number[] = [];
 
@@ -104,13 +104,13 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
     const decAt = toMs(dec.at);
     if (!Number.isFinite(decAt)) continue;
 
-    // considerar somente decisões dentro do período
+    // considerar somente decisÃµes dentro do perÃ­odo
     if (decAt < startMs || decAt > endMs) continue;
 
-    // resposta = decisão - criação
+    // resposta = decisÃ£o - criaÃ§Ã£o
     dur_resposta.push(decAt - created);
 
-    // verificação SisGeo = decisão - start_verification (fallback: created_at)
+    // verificaÃ§Ã£o SisGeo = decisÃ£o - start_verification (fallback: created_at)
     const startVer = firstEventAt(r, "start_verification");
     const base = startVer ? toMs(startVer) : created;
     if (Number.isFinite(base)) dur_verificacao.push(decAt - base);
@@ -132,8 +132,8 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
 }
 
 /**
- * Produtividade SEMAD (Solicitações): ações do role gestor_semad no event-log.
- * Evidência: history[].actor_role === "gestor_semad"
+ * Produtividade SEMAD (SolicitaÃ§Ãµes): aÃ§Ãµes do role gestor_semad no event-log.
+ * EvidÃªncia: history[].actor_role === "gestor_semad"
  */
 export function computeSemadProductivityAreaRequests(fromIso: string, toIso: string) {
   const evs = listRequestEventRowsBetween(fromIso, toIso);
@@ -152,17 +152,17 @@ export function computeSemadProductivityAreaRequests(fromIso: string, toIso: str
   const touched = new Set<string>();
   for (const e of semadEvents) touched.add((e as any).request_id);
 
-  // transições simples (estado lógico)
-  // start_verification: solicitada→em_verificacao
-  // decision: em_verificacao→aprovada/indeferida (ou solicitada→...)
+  // transiÃ§Ãµes simples (estado lÃ³gico)
+  // start_verification: solicitadaâ†’em_verificacao
+  // decision: em_verificacaoâ†’aprovada/indeferida (ou solicitadaâ†’...)
   const transCount = new Map<string, number>();
   for (const e of semadEvents) {
     if (e.type === "start_verification") {
-      transCount.set("solicitada→em_verificacao", (transCount.get("solicitada→em_verificacao") ?? 0) + 1);
+      transCount.set("solicitadaâ†’em_verificacao", (transCount.get("solicitadaâ†’em_verificacao") ?? 0) + 1);
     }
     if (e.type === "decision") {
       const d = (e as any).decision;
-      const key = d === "approved" ? "em_verificacao→aprovada" : "em_verificacao→indeferida";
+      const key = d === "approved" ? "em_verificacaoâ†’aprovada" : "em_verificacaoâ†’indeferida";
       transCount.set(key, (transCount.get(key) ?? 0) + 1);
     }
   }

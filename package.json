@@ -9,10 +9,11 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "docs:asbuilt": "node scripts/as-built/generate_as_built.mjs",
-    "docs:gen": "node scripts/as-built/gen.mjs"
+    "docs:gen": "node scripts/as-built/generate_as_built.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "fastify-type-provider-zod": "^5.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.68.0",

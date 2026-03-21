@@ -1,0 +1,327 @@
+// apps/api/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * =========================
+ * ÁREAS
+ * =========================
+ */
+enum AreaStatus {
+  disponivel
+  em_adocao
+  adotada
+  indisponivel
+}
+
+enum AreaTipo {
+  area_publica
+  solicitacao_adotante
+  praca
+  parque
+  campo_futebol
+  jardim
+  canteiro
+  outro
+}
+
+model Area {
+  id          String     @id @default(uuid())
+  codigo      String     @unique
+  nome        String
+  tipo        AreaTipo
+  bairro      String
+  logradouro  String?
+  metragem_m2 Int
+  status      AreaStatus @default(disponivel)
+  ativo       Boolean    @default(true)
+  restricoes  String?
+  geo_arquivo String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 1 Area -> N Proposals
+  proposals Proposal[] @relation("AreaProposals")
+
+  @@map("areas")
+}
+
+/**
+ * =========================
+ * PROPOSTAS
+ * =========================
+ */
+enum KanbanColuna {
+  protocolo
+  analise_semad
+  analise_ecos
+  ajustes
+  decisao
+  termo_assinado
+  indeferida
+}
+
+enum ClosedStatus {
+  approved
+  rejected
+}
+
+model Proposal {
+  id               String       @id @default(uuid())
+  codigo_protocolo String       @unique
+  area_id          String
+  area_nome        String
+  descricao_plano  String
+  kanban_coluna    KanbanColuna @default(protocolo)
+
+  owner_role    String
+  owner_user_id String? @db.Uuid
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  closed_status ClosedStatus?
+  closed_at     DateTime?
+
+  // relação nomeada (bate com Area.proposals)
+  area Area @relation("AreaProposals", fields: [area_id], references: [id])
+
+  // dono (users.id) — RELATION NAME obrigatório para casar com user.proposals_owned
+  owner_user user? @relation("user_proposals_owned", fields: [owner_user_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  events     ProposalEvent[]
+  documentos ProposalDocumento[]
+
+  // 1 Proposal -> N Vistorias
+  vistorias Vistoria[]
+
+  @@index([area_id])
+  @@index([owner_role])
+  @@index([owner_user_id])
+  @@index([kanban_coluna])
+}
+
+model ProposalEvent {
+  id          String   @id @default(uuid())
+  proposal_id String
+  type        String
+  at          DateTime
+  actor_role  String
+
+  actor_user_id String? @db.Uuid
+
+  from_coluna KanbanColuna?
+  to_coluna   KanbanColuna?
+
+  note          String?
+  decision      String?
+  decision_note String?
+
+  proposal Proposal @relation(fields: [proposal_id], references: [id], onDelete: Cascade)
+
+  // ator (users.id) — RELATION NAME obrigatório para casar com user.proposal_events
+  actor_user user? @relation("user_proposal_events", fields: [actor_user_id], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([proposal_id, at])
+  @@index([type, at])
+  @@index([actor_role, at])
+  @@index([actor_user_id, at])
+}
+
+model ProposalDocumento {
+  id            String  @id @default(uuid())
+  proposal_id   String
+  tipo          String
+  file_name     String
+  file_size     Int?
+  mime_type     String?
+  last_modified BigInt?
+
+  proposal Proposal @relation(fields: [proposal_id], references: [id], onDelete: Cascade)
+
+  @@index([proposal_id])
+  @@index([tipo])
+}
+
+/**
+ * =========================
+ * VISTORIAS (MVP: 100% por event-log)
+ * =========================
+ */
+enum VistoriaFase {
+  analise
+  vigencia
+}
+
+enum VistoriaStatus {
+  rascunho
+  agendada
+  executada
+  laudo_emitido
+  cancelada
+}
+
+enum LaudoConclusao {
+  favoravel
+  favoravel_com_ressalvas
+  desfavoravel
+}
+
+model Vistoria {
+  id          String         @id @default(uuid())
+  proposal_id String
+  fase        VistoriaFase
+  status      VistoriaStatus @default(rascunho)
+
+  local_texto    String
+  geo            Json?
+  checklist_json Json?
+  observacoes    String?
+
+  agendada_para DateTime?
+  executada_em  DateTime?
+
+  laudo_conclusao     LaudoConclusao?
+  laudo_recomendacoes String?
+  laudo_emitido_em    DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  proposal Proposal        @relation(fields: [proposal_id], references: [id], onDelete: Cascade)
+  events   VistoriaEvent[]
+
+  @@index([proposal_id])
+  @@index([fase, status])
+  @@map("vistorias")
+}
+
+model VistoriaEvent {
+  id          String   @id @default(uuid())
+  vistoria_id String
+  type        String
+  at          DateTime
+  actor_role  String
+  payload     Json?
+
+  vistoria Vistoria @relation(fields: [vistoria_id], references: [id], onDelete: Cascade)
+
+  @@index([vistoria_id, at])
+  @@index([type, at])
+  @@index([actor_role, at])
+  @@map("vistoria_events")
+}
+
+/**
+ * =========================
+ * AUTH (integrado)
+ * =========================
+ */
+enum user_role {
+  adotante_pf
+  adotante_pj
+  gestor_semad
+  gestor_ecos
+  gestor_governo
+  administrador
+}
+
+enum user_status {
+  active
+  pending_invite
+  disabled
+}
+
+enum reset_token_purpose {
+  reset_password
+  invite_set_password
+}
+
+enum email_status {
+  pending
+  sent
+  failed
+}
+
+model user {
+  id                String      @id @default(uuid()) @db.Uuid
+  email             String      @unique
+  nome              String
+  cpf_cnpj          String?     @unique
+  role              user_role
+  status            user_status @default(active)
+  password_hash     String?
+  email_verified_at DateTime?
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
+
+  sessions              session[]
+  password_reset_tokens password_reset_token[]
+  email_outbox          email_outbox[]
+
+  // ownership/auditoria (nomes DEVEM casar com Proposal.owner_user e ProposalEvent.actor_user)
+  proposals_owned Proposal[]      @relation("user_proposals_owned")
+  proposal_events ProposalEvent[] @relation("user_proposal_events")
+
+  @@map("users")
+}
+
+model session {
+  id                 String    @id @default(uuid()) @db.Uuid
+  user_id            String    @db.Uuid
+  refresh_token_hash String    @unique
+  expires_at         DateTime
+  revoked_at         DateTime?
+  rotated_from_id    String?   @db.Uuid
+  ip                 String?
+  user_agent         String?
+  created_at         DateTime  @default(now())
+
+  user user @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@map("sessions")
+}
+
+model password_reset_token {
+  id           String              @id @default(uuid()) @db.Uuid
+  user_id      String              @db.Uuid
+  purpose      reset_token_purpose
+  token_hash   String              @unique
+  expires_at   DateTime
+  used_at      DateTime?
+  requested_ip String?
+  created_at   DateTime            @default(now())
+
+  user user @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@map("password_reset_tokens")
+}
+
+model email_outbox {
+  id           String       @id @default(uuid()) @db.Uuid
+  user_id      String?      @db.Uuid
+  to_email     String
+  template     String
+  payload_json Json
+  status       email_status @default(pending)
+  attempts     Int          @default(0)
+  last_error   String?
+  created_at   DateTime     @default(now())
+  sent_at      DateTime?
+
+  user user? @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([status, created_at])
+  @@map("email_outbox")
+}

@@ -1,4 +1,5 @@
-import type { AreaPublica, AreaStatus, AreaArquivoMeta } from "../domain/area";
+﻿import type { AreaPublica, AreaStatus, AreaArquivoMeta } from "../domain/area";
+import { isAreaStatus, normalizeLegacyAreaStatus } from "../domain/status";
 import { mock_areas } from "../mock/areas";
 
 const KEY = "mvp_areas_v1";
@@ -41,16 +42,7 @@ function stripAccents(s: string) {
 }
 
 function normalizeStatus(raw: string): AreaStatus | null {
-  const s = stripAccents(raw)
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "_")
-    .replace(/-/g, "_");
-
-  if (s === "disponivel" || s === "disponivel_para_adocao") return "disponivel";
-  if (s === "em_adocao") return "em_adocao";
-  if (s === "adotada" || s === "adotado") return "adotada";
-  return null;
+  return normalizeLegacyAreaStatus(raw);
 }
 
 function parseBool(raw: unknown, fallback: boolean) {
@@ -91,8 +83,11 @@ function normalizeArea(raw: any, idx: number): AreaPublica {
       ? raw.metragem_m2
       : parseNumberBR(raw?.metragem_m2 ?? raw?.metragem ?? 0) ?? 0;
 
+  const rawStatus = raw?.status;
   const status: AreaStatus =
-    (raw?.status as AreaStatus) || normalizeStatus(String(raw?.status ?? "")) || "disponivel";
+    (isAreaStatus(rawStatus) ? rawStatus : null) ||
+    normalizeStatus(String(rawStatus ?? "")) ||
+    "disponivel";
 
   const ativo = typeof raw?.ativo === "boolean" ? raw.ativo : parseBool(raw?.ativo, true);
   const restricoes = raw?.restricoes ? String(raw.restricoes) : undefined;
@@ -144,7 +139,7 @@ function writeAll(items: AreaPublica[]) {
 }
 
 function ensureSeeded() {
-  if (localStorage.getItem(DISABLE_SEED)) return; // <- não semeia em modo teste CSV
+  if (localStorage.getItem(DISABLE_SEED)) return;
   if (localStorage.getItem(SEEDED)) return;
 
   const existing = readAllRaw();
@@ -158,7 +153,6 @@ function ensureSeeded() {
   localStorage.setItem(SEEDED, "1");
 }
 
-/** Zera o cadastro e desativa o seed do mock (modo teste de importação CSV). */
 export function clearAreasForImportTesting() {
   localStorage.setItem(DISABLE_SEED, "1");
   localStorage.setItem(SEEDED, "1");
@@ -166,13 +160,11 @@ export function clearAreasForImportTesting() {
   emit();
 }
 
-/** Lista todas (admin). */
 export function listAreas(): AreaPublica[] {
   ensureSeeded();
   return readAllRaw().map((a, i) => normalizeArea(a, i));
 }
 
-/** Lista para público (somente ativas). */
 export function listAreasPublic(): AreaPublica[] {
   return listAreas().filter((a) => a.ativo);
 }
@@ -239,10 +231,6 @@ export function setAreaGeoFile(id: string, file: AreaArquivoMeta | undefined) {
   all[idx] = { ...all[idx], geo_arquivo: file, updated_at: nowIso() };
   writeAll(all);
 }
-
-/* =========================
-   IMPORTAÇÃO CSV
-========================= */
 
 export type ImportReport = {
   created: number;
