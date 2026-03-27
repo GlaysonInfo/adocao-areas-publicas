@@ -599,7 +599,7 @@ export function ReportsPage() {
       "Termos assinados",
       "Indeferidas",
 
-      // ExceÃ§Ãµes
+      // Exceções
       "Overrides sem vistoria (total)",
       "Overrides sem vistoria (SEMAD)",
 
@@ -678,7 +678,7 @@ export function ReportsPage() {
       "E-mail",
       "Celular",
       "WhatsApp",
-      "Ãšltimo motivo de ajustes (no período)",
+      "Último motivo de ajustes (no período)",
     ];
 
     const rows = items.map((p) => {
@@ -887,7 +887,7 @@ export function ReportsPage() {
               </p>
             </div>
 
-            {/* âœ… NOVO: ExceÃ§Ãµes / GovernanÃ§a */}
+            {/* NOVO: Exceções / Governança */}
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
               <h3>Exceções / Governança</h3>
               <p className="muted" style={{ marginTop: 6 }}>
@@ -1134,7 +1134,7 @@ export function ReportsPage() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Protocolo", "Área", "Motivo (Ãºltimo no período)", "Solicitado por", "Evento em", "Contato"].map((h) => (
+                    {["Protocolo", "Área", "Motivo (último no período)", "Solicitado por", "Evento em", "Contato"].map((h) => (
                       <th key={h} style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>
                         {h}
                       </th>
@@ -1303,7 +1303,7 @@ export function ReportsPage() {
         {tab === "sla" ? (
           <div>
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>SLA por etapa (tempo de permanÃªncia)</h3>
+              <h3>SLA por etapa (tempo de permanência)</h3>
               <p style={{ marginTop: 6, opacity: 0.85 }}>
                 Métricas calculadas a partir do log de <strong>moves</strong>, com recorte no período e censura no fim do intervalo.
               </p>
@@ -1312,7 +1312,7 @@ export function ReportsPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      {["Coluna", "Amostras", "Meta", "P50", "P80", "P95", "ViolaÃ§Ã£o (â‰¥ meta)"].map((h) => (
+                      {["Coluna", "Amostras", "Meta", "P50", "P80", "P95", "Violação (>= meta)"].map((h) => (
                         <th key={h} style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>
                           {h}
                         </th>
@@ -1349,7 +1349,7 @@ export function ReportsPage() {
               </div>
 
               <p style={{ marginTop: 12, opacity: 0.85 }}>
-                Para um SLA OFICIAL, as metas devem ser definidas por norma interna (dias úteis vs corridos) e a violaÃ§Ã£o pode ser separada em:
+                Para um SLA OFICIAL, as metas devem ser definidas por norma interna (dias úteis vs corridos) e a violação pode ser separada em:
                 (i) segmentos encerrados no período; (ii) itens censurados (ainda abertos).
               </p>
             </div>

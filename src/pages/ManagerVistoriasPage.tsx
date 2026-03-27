@@ -40,7 +40,7 @@ export function ManagerVistoriasPage() {
   const [status, setStatus] = useState<string>(sp.get("status") ?? "");
   const [q, setQ] = useState<string>(sp.get("q") ?? "");
 
-  // opÃ§Ãµes dinÃ¢micas (derivadas do localStorage)
+  // opções dinâmicas (derivadas do localStorage)
   const fases = useMemo(() => {
     const set = new Set<string>();
     for (const v of all as any[]) {
@@ -59,7 +59,7 @@ export function ManagerVistoriasPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [all]);
 
-  // aplicar/limpar filtros = atualizar URL (evidÃªncia: reproduzÃ­vel sÃ³ pela querystring + localStorage)
+  // aplicar/limpar filtros = atualizar URL (evidência: reproduzível só pela querystring + localStorage)
   function applyFilters() {
     const next = new URLSearchParams();
     if (proposalId.trim()) next.set("proposal_id", proposalId.trim());
@@ -190,7 +190,7 @@ export function ManagerVistoriasPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Ex.: praÃ§a, canteiro, avenida..."
+                placeholder="Ex.: praça, canteiro, avenida..."
                 style={{
                   width: "100%",
                   marginTop: 6,

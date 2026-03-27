@@ -58,7 +58,7 @@ function isSemadRole(role: string) {
 
 /**
  * Métricas de Solicitações de Área (fora do Kanban).
- * EvidÃªncia: events em mvp_area_requests_v1[].history
+ * Evidência: events em mvp_area_requests_v1[].history
  */
 export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
   const reqs = listAreaRequests();
@@ -107,7 +107,7 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
     // considerar somente Decisões dentro do período
     if (decAt < startMs || decAt > endMs) continue;
 
-    // resposta = Decisão - criaÃ§Ã£o
+    // resposta = Decisão - criação
     dur_resposta.push(decAt - created);
 
     // verificação SisGeo = Decisão - start_verification (fallback: created_at)
@@ -132,8 +132,8 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
 }
 
 /**
- * Produtividade SEMAD (Solicitações): aÃ§Ãµes do role gestor_semad no event-log.
- * EvidÃªncia: history[].actor_role === "gestor_semad"
+ * Produtividade SEMAD (Solicitações): ações do role gestor_semad no event-log.
+ * Evidência: history[].actor_role === "gestor_semad"
  */
 export function computeSemadProductivityAreaRequests(fromIso: string, toIso: string) {
   const evs = listRequestEventRowsBetween(fromIso, toIso);
@@ -152,7 +152,7 @@ export function computeSemadProductivityAreaRequests(fromIso: string, toIso: str
   const touched = new Set<string>();
   for (const e of semadEvents) touched.add((e as any).request_id);
 
-  // transiÃ§Ãµes simples (estado lÃ³gico)
+  // transições simples (estado lógico)
   // start_verification: solicitadaem_verificacao
   // decision: em_verificacaoaprovada/indeferida (ou solicitada...)
   const transCount = new Map<string, number>();

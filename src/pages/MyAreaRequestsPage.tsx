@@ -23,7 +23,7 @@ export function MyAreaRequestsPage() {
         <header className="page__header">
           <div className="page__titlewrap">
             <h1 className="page__title">Minhas Solicitações de Área</h1>
-            <p className="page__subtitle">Acompanhe aprovaÃ§Ãµes/indeferimentos e, quando aprovado, acesse a proposta gerada.</p>
+            <p className="page__subtitle">Acompanhe aprovações/indeferimentos e, quando aprovado, acesse a proposta gerada.</p>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -31,7 +31,7 @@ export function MyAreaRequestsPage() {
               Nova solicitação
             </Link>
             <Link className="btn" to="/propostas/nova">
-              Nova proposta (Área jÃ¡ cadastrada)
+              Nova proposta (Área já cadastrada)
             </Link>
           </div>
         </header>

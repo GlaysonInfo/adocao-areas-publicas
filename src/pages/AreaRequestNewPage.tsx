@@ -96,7 +96,7 @@ export function AreaRequestNewPage() {
     const carta = values.carta_intencao as FileList;
     const projeto = values.projeto_resumo as FileList;
 
-    if (!carta?.length) return alert("Anexe a Carta de IntenÃ§Ã£o.");
+    if (!carta?.length) return alert("Anexe a Carta de Intenção.");
     if (!projeto?.length) return alert("Anexe o Projeto Resumo.");
 
     const docs: AreaRequestDocumentoMeta[] = [
@@ -170,7 +170,7 @@ export function AreaRequestNewPage() {
               </div>
               {geo ? (
                 <div className="muted">
-                  lat={geo.lat} | lng={geo.lng} | acurÃ¡ciaâ‰ˆ{geo.accuracy_m ?? "-"}m | {geo.captured_at}
+                  lat={geo.lat} | lng={geo.lng} | acurácia≈{geo.accuracy_m ?? "-"}m | {geo.captured_at}
                 </div>
               ) : (
                 <div className="muted">Sem coordenadas capturadas.</div>

@@ -73,48 +73,48 @@ function buildLaudoModelo(v: any, role: string) {
   const risco = checklistValueLabel(c?.risco);
   const obsChecklist = String(c?.observacoes ?? "").trim();
 
-  // Modelo â€œinstitucionalâ€ + evidÃªncias + espaÃ§o de Análise
-  return `PREFEITURA DE BETIM - EDUCAÃ‡ÃƒO AMBIENTAL
-PROGRAMA: ADOTE UMA Área PÃšBLICA
-Base legal (Betim): Lei Municipal nÂº 6.180/2017 e Decreto nÂº 40.891/2017
+  // Modelo "institucional" + evidências + espaço de análise
+  return `PREFEITURA DE BETIM - EDUCAÇÃO AMBIENTAL
+PROGRAMA: ADOTE UMA ÁREA PÚBLICA
+Base legal (Betim): Lei Municipal nº 6.180/2017 e Decreto nº 40.891/2017
 Contato: semmadbetim@betim.mg.gov.br - Telefone: (31) 3512-3032
 
-LAUDO TÃ‰CNICO (MVP) - VISTORIA / PRÃ‰-ADOÃ‡ÃƒO
+LAUDO TÉCNICO (MVP) - VISTORIA / PRÉ-ADOÇÃO
 
-1) IdentificaÃ§Ã£o
+1) Identificação
 - Protocolo: ${protocolo}
 - Área: ${area}
 - Fase/Tipo de vistoria: ${fase}
 - Local: ${local}
 - Agendada para: ${fmt(agendada)}
 - Realizada em: ${fmt(realizadaAt)}
-- ResponsÃ¡vel (SEMAD): ${role}
+- Responsável (SEMAD): ${role}
 
 2) Contexto do programa (resumo)
-O programa ADOTE UMA Área PÃšBLICA promove cooperaÃ§Ã£o entre a Prefeitura de Betim e a sociedade para qualificar espaÃ§os pÃºblicos e Áreas verdes, por meio de aÃ§Ãµes de manutenÃ§Ã£o, implantaÃ§Ã£o, reforma e melhoria urbana/paisagÃ­stica/ambiental, conforme regras municipais e termo firmado.
-A adoção não concede uso exclusivo do espaÃ§o: regulamenta responsabilidades, contrapartidas e padrÃµes de execuÃ§Ã£o.
+O programa ADOTE UMA ÁREA PÚBLICA promove cooperação entre a Prefeitura de Betim e a sociedade para qualificar espaços públicos e áreas verdes, por meio de ações de manutenção, implantação, reforma e melhoria urbana/paisagística/ambiental, conforme regras municipais e termo firmado.
+A adoção não concede uso exclusivo do espaço: regulamenta responsabilidades, contrapartidas e padrões de execução.
 
 3) Escopo da vistoria
-Registrar condiÃ§Ãµes gerais e achados relevantes para subsidiar a Análise técnica do processo de adoção, incluindo riscos, conservaÃ§Ã£o e necessidades de adequaÃ§Ã£o.
+Registrar condições gerais e achados relevantes para subsidiar a análise técnica do processo de adoção, incluindo riscos, conservação e necessidades de adequação.
 
 4) Checklist (campos fixos)
 - Acesso: ${acesso}
-- IluminaÃ§Ã£o: ${iluminacao}
+- Iluminação: ${iluminacao}
 - Limpeza: ${limpeza}
-- SinalizaÃ§Ã£o: ${sinalizacao}
+- Sinalização: ${sinalizacao}
 - Risco: ${risco}
 
-5) EvidÃªncias / observaÃ§Ãµes objetivas
-${obsChecklist ? obsChecklist : "(Descreva aqui o que foi observado: conservaÃ§Ã£o, mobiliÃ¡rio urbano, vegetaÃ§Ã£o, acessibilidade, iluminaÃ§Ã£o, seguranÃ§a, entorno, etc.)"}
+5) Evidências / observações objetivas
+${obsChecklist ? obsChecklist : "(Descreva aqui o que foi observado: conservação, mobiliário urbano, vegetação, acessibilidade, iluminação, segurança, entorno, etc.)"}
 
-6) Análise técnica (ediÃ§Ã£o do gestor)
-(Complete com sua Análise: conformidades, não conformidades, pontos de atenÃ§Ã£o, impactos e justificativas.)
+6) Análise técnica (edição do gestor)
+(Complete com sua análise: conformidades, não conformidades, pontos de atenção, impactos e justificativas.)
 
-7) RecomendaÃ§Ãµes / condicionantes
-(Edite e detalhe recomendaÃ§Ãµes. Exemplos: adequaÃ§Ã£o de sinalizaÃ§Ã£o, manejo de vegetaÃ§Ã£o, ajustes no plano do adotante, cronograma, anexar fotos/metadados, condicionantes para deferimento.)
+7) Recomendações / condicionantes
+(Edite e detalhe recomendações. Exemplos: adequação de sinalização, manejo de vegetação, ajustes no plano do adotante, cronograma, anexar fotos/metadados, condicionantes para deferimento.)
 
-8) ConclusÃ£o
-(Definir no campo â€œConclusÃ£oâ€ acima: FavorÃ¡vel / Com ressalvas / DesfavorÃ¡vel.)
+8) Conclusão
+(Definir no campo "Conclusão" acima: Favorável / Com ressalvas / Desfavorável.)
 - Fim -
 `;
 }
@@ -305,7 +305,7 @@ export function ManagerVistoriaDetailPage() {
 
           <div className="page__actions" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link className="btn btn--subtle" to={`/gestor/vistorias?proposal_id=${encodeURIComponent(v.proposal_id)}`}>
-              Voltar Ã  lista
+              Voltar à lista
             </Link>
             {v.proposal_id ? (
               <Link className="btn btn--subtle" to={`/gestor/propostas/${encodeURIComponent(v.proposal_id)}`}>
@@ -351,7 +351,7 @@ export function ManagerVistoriaDetailPage() {
               />
               {v.status !== "agendada" ? (
                 <div className="muted" style={{ marginTop: 6 }}>
-                  Agendamento sÃ³ pode ser alterado enquanto status = <strong>agendada</strong>.
+                  Agendamento só pode ser alterado enquanto status = <strong>agendada</strong>.
                 </div>
               ) : null}
             </label>
@@ -365,7 +365,7 @@ export function ManagerVistoriaDetailPage() {
         </section>
 
         <section className="card pad" style={{ marginTop: 12 }}>
-          <h3 style={{ marginTop: 0 }}>Status (transiÃ§Ãµes)</h3>
+          <h3 style={{ marginTop: 0 }}>Status (transições)</h3>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button type="button" className="btn" disabled={!canMarkRealizada} onClick={() => doStatus("realizada")}>
@@ -411,7 +411,7 @@ export function ManagerVistoriaDetailPage() {
             </div>
 
             <label style={{ fontWeight: 800 }}>
-              ObservaÃ§Ãµes do checklist
+              Observações do checklist
               <textarea {...checklistForm.register("observacoes")} rows={4} style={{ width: "100%", marginTop: 6 }} />
             </label>
 
@@ -506,7 +506,7 @@ export function ManagerVistoriaDetailPage() {
               <div className="muted" style={{ marginBottom: 10 }}>
                 Para emitir laudo, a vistoria deve estar <strong>realizada</strong>.
                 <br />
-                Ao emitir, o sistema salva o texto do laudo em <strong>RecomendaÃ§Ãµes</strong> (modelo editÃ¡vel) e ele passa a
+                Ao emitir, o sistema salva o texto do laudo em <strong>Recomendações</strong> (modelo editável) e ele passa a
                 aparecer aqui.
               </div>
 
@@ -551,7 +551,7 @@ export function ManagerVistoriaDetailPage() {
                 <div>
                   <h3 style={{ marginTop: 0 }}>Editor do laudo</h3>
                   <p className="muted" style={{ marginTop: 6 }}>
-                    Modelo pré-preenchido com dados da vistoria + conteÃºdo institucional do programa. Edite e depois{" "}
+                    Modelo pré-preenchido com dados da vistoria + conteúdo institucional do programa. Edite e depois{" "}
                     <strong>Salvar e emitir</strong>.
                   </p>
                 </div>
@@ -570,7 +570,7 @@ export function ManagerVistoriaDetailPage() {
 
               <div className="grid cols-2" style={{ alignItems: "end" }}>
                 <label style={{ fontWeight: 800 }}>
-                  ConclusÃ£o
+                  Conclusão
                   <select {...laudoForm.register("conclusao")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="favoravel">FavorÃ¡vel</option>
                     <option value="com_ressalvas">Com ressalvas</option>
@@ -592,7 +592,7 @@ export function ManagerVistoriaDetailPage() {
               </div>
 
               <label style={{ fontWeight: 800, display: "block", marginTop: 12 }}>
-                Laudo (texto editÃ¡vel - serÃ¡ gravado em â€œRecomendaÃ§Ãµesâ€)
+                Laudo (texto editável - será gravado em "Recomendações")
                 <textarea
                   {...laudoForm.register("recomendacoes")}
                   rows={18}
@@ -619,7 +619,7 @@ export function ManagerVistoriaDetailPage() {
                 </button>
 
                 <div className="muted" style={{ alignSelf: "center" }}>
-                  Dica: use â€œAnexosâ€ para registrar fotos/arquivos como evidÃªncia (MVP guarda metadados).
+                  Dica: use "Anexos" para registrar fotos/arquivos como evidência (MVP guarda metadados).
                 </div>
               </div>
             </div>
@@ -627,7 +627,7 @@ export function ManagerVistoriaDetailPage() {
         ) : null}
 
         <section className="card pad" style={{ marginTop: 12 }}>
-          <h3 style={{ marginTop: 0 }}>HistÃ³rico</h3>
+          <h3 style={{ marginTop: 0 }}>Histórico</h3>
           {v.history?.length ? (
             <ul style={{ margin: "6px 0 0 18px" }}>
               {v.history.map((e) => (

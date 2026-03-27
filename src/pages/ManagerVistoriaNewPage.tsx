@@ -114,7 +114,7 @@ export function ManagerVistoriaNewPage() {
 
       navigate(`/gestor/vistorias/${encodeURIComponent(v.id)}`, { replace: true });
     } catch (e: any) {
-      alert(e?.message ?? "não foi possÃ­vel criar a vistoria.");
+      alert(e?.message ?? "não foi possível criar a vistoria.");
     }
   };
 
