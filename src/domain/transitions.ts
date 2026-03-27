@@ -1,4 +1,4 @@
-﻿// src/domain/transitions.ts
+// src/domain/transitions.ts
 import type { KanbanColuna } from "./proposal";
 
 export type TransitionRule = {

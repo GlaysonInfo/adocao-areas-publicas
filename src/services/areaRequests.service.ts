@@ -1,7 +1,12 @@
+<<<<<<< HEAD
 ﻿// src/services/areaRequests.service.ts
 import type { AreaDraft, AreaRequest, SisGeoResultado } from "../domain/area_request";
 import { useHttpApiEnabled } from "../lib/feature-flags";
 import { areaRequestsHttpService } from "./http/area-requests-http.service";
+=======
+// src/services/areaRequests.service.ts
+import type { AreaDraft, AreaRequest, SisGeoResultado } from "../domain/area_request";
+>>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
 import {
   createAreaRequest,
   decideAreaRequest,
@@ -18,6 +23,7 @@ import {
   computeSemadProductivityAreaRequests,
 } from "../storage/area_request_reports";
 
+<<<<<<< HEAD
 const KEY = "mvp_area_requests_v1";
 
 function writeCache(items: AreaRequest[]) {
@@ -47,6 +53,28 @@ export const areaRequestsService = {
     return startVerification(id, actorRole);
   },
 
+=======
+/**
+ * Fachada de serviço para Solicitações de Área.
+ */
+export const areaRequestsService = {
+  subscribe: subscribeAreaRequests,
+  listAll(): AreaRequest[] {
+    return listAreaRequests();
+  },
+  listMine(ownerRole: string | null | undefined): AreaRequest[] {
+    return listMyAreaRequests(ownerRole);
+  },
+  getById(id: string): AreaRequest | null {
+    return getAreaRequestById(id);
+  },
+  create(input: AreaRequest, actorRole: string) {
+    return createAreaRequest(input, actorRole);
+  },
+  startVerification(id: string, actorRole: string) {
+    return startVerification(id, actorRole);
+  },
+>>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
   updateSisGeo(
     id: string,
     input: { sisgeo_resultado: SisGeoResultado; sisgeo_ref?: string; sisgeo_note?: string },
@@ -54,11 +82,17 @@ export const areaRequestsService = {
   ) {
     return updateSisGeo(id, input, actorRole);
   },
+<<<<<<< HEAD
 
   setAreaDraft(id: string, draft: AreaDraft) {
     return setAreaDraft(id, draft);
   },
 
+=======
+  setAreaDraft(id: string, draft: AreaDraft) {
+    return setAreaDraft(id, draft);
+  },
+>>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
   decide(
     id: string,
     input:
@@ -68,6 +102,7 @@ export const areaRequestsService = {
   ) {
     return decideAreaRequest(id, input, actorRole);
   },
+<<<<<<< HEAD
 
   computeMetrics(fromIso: string, toIso: string) {
     return computeAreaRequestMetrics(fromIso, toIso);
@@ -137,3 +172,12 @@ export const areaRequestsService = {
     return items;
   },
 };
+=======
+  computeMetrics(fromIso: string, toIso: string) {
+    return computeAreaRequestMetrics(fromIso, toIso);
+  },
+  computeSemadProductivity(fromIso: string, toIso: string) {
+    return computeSemadProductivityAreaRequests(fromIso, toIso);
+  },
+};
+>>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6

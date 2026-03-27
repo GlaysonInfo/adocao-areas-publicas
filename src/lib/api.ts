@@ -1,4 +1,4 @@
-﻿// src/lib/api.ts
+// src/lib/api.ts
 export type ApiErrorPayload = {
   message?: string;
   error?: string;

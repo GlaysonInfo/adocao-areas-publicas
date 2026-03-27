@@ -1,4 +1,4 @@
-﻿// src/domain/status.ts
+// src/domain/status.ts
 import type { AreaStatus } from "./area";
 import type { AreaRequestStatus } from "./area_request";
 import type { KanbanColuna } from "./proposal";

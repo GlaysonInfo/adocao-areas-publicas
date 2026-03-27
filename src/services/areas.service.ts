@@ -1,8 +1,14 @@
+<<<<<<< HEAD
 ﻿// src/services/areas.service.ts
 import type { AreaArquivoMeta, AreaPublica, AreaStatus } from "../domain/area";
 import type { ImportReport } from "../storage/areas";
 import { useHttpApiEnabled } from "../lib/feature-flags";
 import { areasHttpService } from "./http/areas-http.service";
+=======
+// src/services/areas.service.ts
+import type { AreaArquivoMeta, AreaPublica, AreaStatus } from "../domain/area";
+import type { ImportReport } from "../storage/areas";
+>>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
 import {
   clearAreasForImportTesting,
   createArea,
@@ -18,6 +24,7 @@ import {
   upsertArea,
 } from "../storage/areas";
 
+<<<<<<< HEAD
 export type { ImportReport };
 
 const AREAS_KEY = "mvp_areas_v1";
@@ -103,4 +110,47 @@ export const areasService = {
     writeAreasCache(items);
     return items;
   },
+=======
+/**
+ * Fachada de serviço para Áreas.
+ *
+ * Hoje delega 100% ao storage local (MVP).
+ * Amanhã pode trocar internamente para HTTP/API sem quebrar as telas.
+ */
+export const areasService = {
+  subscribe: subscribeAreas,
+  listAll(): AreaPublica[] {
+    return listAreas();
+  },
+  listPublic(): AreaPublica[] {
+    return listAreasPublic();
+  },
+  getById(id: string): AreaPublica | null {
+    return getAreaById(id);
+  },
+  getByCodigo(codigo: string): AreaPublica | null {
+    return getAreaByCodigo(codigo);
+  },
+  create(input: Omit<AreaPublica, "id" | "created_at" | "updated_at">) {
+    return createArea(input);
+  },
+  upsert(area: AreaPublica) {
+    return upsertArea(area);
+  },
+  setActive(id: string, ativo: boolean) {
+    return setAreaActive(id, ativo);
+  },
+  setStatus(id: string, status: AreaStatus) {
+    return setAreaStatus(id, status);
+  },
+  setGeoFile(id: string, file: AreaArquivoMeta | undefined) {
+    return setAreaGeoFile(id, file);
+  },
+  importFromCSV(csvText: string): ImportReport {
+    return importAreasFromCSV(csvText);
+  },
+  clearForImportTesting() {
+    return clearAreasForImportTesting();
+  },
+>>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
 };
