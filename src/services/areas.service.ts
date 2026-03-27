@@ -24,15 +24,6 @@ const AREAS_CACHE_KEY = "mvp_areas_v1";
 
 const cacheAreas = (items: AreaPublica[]) => localStorage.setItem(AREAS_CACHE_KEY, JSON.stringify(items));
 
-const readAreasCache = (): AreaPublica[] => {
-  try {
-    const raw = localStorage.getItem(AREAS_CACHE_KEY);
-    return raw ? (JSON.parse(raw) as AreaPublica[]) : [];
-  } catch {
-    return [];
-  }
-};
-
 const withHttpOrLocal = async <T>(localFn: () => T, httpFn: () => Promise<T>): Promise<T> =>
   useHttpApiEnabled() ? httpFn() : Promise.resolve(localFn());
 

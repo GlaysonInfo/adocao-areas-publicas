@@ -24,15 +24,6 @@ const cacheAreaRequests = (items: AreaRequest[]) => {
   localStorage.setItem(AREA_REQUESTS_CACHE_KEY, JSON.stringify(items));
 };
 
-const getCachedAreaRequests = (): AreaRequest[] => {
-  try {
-    const raw = localStorage.getItem(AREA_REQUESTS_CACHE_KEY);
-    return raw ? (JSON.parse(raw) as AreaRequest[]) : [];
-  } catch {
-    return [];
-  }
-};
-
 const maybeFetchOrLocal = async <T>(localFn: () => T, remoteFn: () => Promise<T>): Promise<T> => {
   return useHttpApiEnabled() ? remoteFn() : Promise.resolve(localFn());
 };

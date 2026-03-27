@@ -22,14 +22,6 @@ import {
 const PROPOSALS_CACHE_KEY = "mvp_proposals_v1";
 
 const cacheProposals = (items: PropostaAdocao[]) => localStorage.setItem(PROPOSALS_CACHE_KEY, JSON.stringify(items));
-const readProposalsCache = (): PropostaAdocao[] => {
-  try {
-    const raw = localStorage.getItem(PROPOSALS_CACHE_KEY);
-    return raw ? (JSON.parse(raw) as PropostaAdocao[]) : [];
-  } catch {
-    return [];
-  }
-};
 
 const withHttpOrLocal = async <T>(localFn: () => T, httpFn: () => Promise<T>): Promise<T> =>
   useHttpApiEnabled() ? httpFn() : Promise.resolve(localFn());
