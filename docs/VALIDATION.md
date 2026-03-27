@@ -421,14 +421,14 @@ Registrar o estado persistido do MVP sem expor dados sensíveis.
         {
             "id": "a1",
             "codigo": "BETIM-AREA-0001",
-            "nome": "Pra�a da Matriz",
-            "tipo": "Pra�a",
+            "nome": "Praça da Matriz",
+            "tipo": "Praça",
             "bairro": "Centro",
             "logradouro": "Av. Principal, s/n",
             "metragem_m2": 850,
             "status": "disponivel",
             "ativo": true,
-            "restricoes": "N�o permite estruturas permanentes",
+            "restricoes": "Nço permite estruturas permanentes",
             "latitude_centro": -19.9671,
             "longitude_centro": -44.1982,
             "created_at": "2026-01-27T22:06:36.505Z",
@@ -458,7 +458,7 @@ Registrar o estado persistido do MVP sem expor dados sensíveis.
             "metragem_m2": 420,
             "status": "disponivel",
             "ativo": true,
-            "restricoes": "Manter visibilidade de sinaliza��o vi�ria",
+            "restricoes": "Manter visibilidade de sinalizaçço viçria",
             "created_at": "2026-01-27T22:08:38.616Z",
             "updated_at": "2026-01-27T22:08:38.616Z"
         }

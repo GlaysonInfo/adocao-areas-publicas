@@ -1,4 +1,4 @@
-﻿const MOJIBAKE_MARKERS = ["Ã", "â€", "â€“", "â€”", "Â", "�"];
+﻿const MOJIBAKE_MARKERS = ["Ã", "â€", "â€“", "â€”", "Â", "ç"];
 
 function looksMojibake(value: string) {
   return MOJIBAKE_MARKERS.some((m) => value.includes(m));

@@ -356,7 +356,7 @@ export function AdminAreasImportPage() {
 
             <div style={{ opacity: 0.85, lineHeight: 1.5 }}>
               <div>
-                <strong>ObrigatÃ³rios:</strong> {requiredHeaders.join(", ")}
+                <strong>Obrigatórios:</strong> {requiredHeaders.join(", ")}
               </div>
               <div>
                 <strong>Status aceitos:</strong> disponivel | em_adocao | adotada
@@ -388,9 +388,9 @@ export function AdminAreasImportPage() {
               <div className="card pad" style={{ marginTop: 12, background: "rgba(255,255,255,.72)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div>
-                    <h3 style={{ marginTop: 0 }}>Preview (validaÃ§Ã£o)</h3>
+                    <h3 style={{ marginTop: 0 }}>Preview (validação)</h3>
                     <p style={{ marginTop: 6 }}>
-                      AÃ§Ãµes previstas: <strong>Criar</strong> ({preview.counts.criar}) :{" "}
+                      Ações previstas: <strong>Criar</strong> ({preview.counts.criar}) :{" "}
                       <strong>Atualizar</strong> ({preview.counts.atualizar}) : <strong>Pular</strong> ({preview.counts.pular})
                     </p>
                   </div>
@@ -412,7 +412,7 @@ export function AdminAreasImportPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
                     <thead>
                       <tr>
-                        {["Linha", "AÃ§Ã£o", "CÃ³digo", "Nome", "Tipo", "Bairro", "Logradouro", "Metragem", "Status", "Ativo", "Erros"].map(
+                        {["Linha", "Ação", "Código", "Nome", "Tipo", "Bairro", "Logradouro", "Metragem", "Status", "Ativo", "Erros"].map(
                           (h) => (
                             <th
                               key={h}
@@ -534,7 +534,7 @@ export function AdminAreasImportPage() {
                     ) : null}
                   </>
                 ) : (
-                  <p style={{ marginTop: 10, opacity: 0.85 }}>ImportaÃ§Ã£o concluÃ­da sem erros.</p>
+                  <p style={{ marginTop: 10, opacity: 0.85 }}>Importação concluída sem erros.</p>
                 )}
 
                 <div style={{ marginTop: 12 }}>

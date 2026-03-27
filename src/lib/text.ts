@@ -1,6 +1,6 @@
 // src/lib/text.ts
 
-const MOJIBAKE_MARKERS = ["Ã", "â€", "â€“", "â€”", "Â", "�"];
+const MOJIBAKE_MARKERS = ["Ã", "â€", "â€“", "â€”", "Â", "ç"];
 
 function looksMojibake(value: string) {
   return MOJIBAKE_MARKERS.some((m) => value.includes(m));
@@ -8,7 +8,7 @@ function looksMojibake(value: string) {
 
 /**
  * Tenta corrigir textos UTF-8 lidos como Latin-1/Windows-1252.
- * Ex.: "CÃ³digo" -> "Código", "Ã�rea" -> "Área", "â€”" -> "—".
+ * Ex.: "CÃ³digo" -> "Código", "Ãçrea" -> "Área", "â€”" -> "—".
  */
 export function fixMojibake(value: unknown): string {
   const input = String(value ?? "");

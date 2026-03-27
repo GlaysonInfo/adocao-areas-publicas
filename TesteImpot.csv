@@ -1,4 +1,25 @@
 codigo;nome;tipo;bairro;logradouro;metragem_m2;status;ativo;restricoes;latitude_centro;longitude_centro
-BETIM-AREA-0001;Pra�a da Matriz;Pra�a;Centro;Av. Principal, s/n;850;disponivel;1;N�o permite estruturas permanentes;-19,9671;-44,1982
-BETIM-AREA-0002;Campo do Bom Retiro;Campo de Futebol;Bom Retiro;Av. B;13782;disponivel;1;Proibido cercar;;
-BETIM-AREA-0003;Canteiro Av. das Palmeiras;Canteiro;Jardim;Av. das Palmeiras, 1200;420;disponivel;1;Manter visibilidade de sinaliza��o vi�ria;;
+BETIM-AREA-0023;Praça da Matriz;Praça;Centro;Av. Principal, s/n;850;disponivel;1;Nço permite estruturas permanentes;-19,9671;-44,1982
+BETIM-AREA-0022;Campo do Bom Retiro;Campo de Futebol;Bom Retiro;Av. B;13782;disponivel;1;Proibido cercar;;
+BETIM-AREA-0003;Canteiro Av. das Palmeiras;Canteiro;Jardim;Av. das Palmeiras, 1200;420;disponivel;1;Manter visibilidade de sinalizaçço viçria;;
+BETIM-REAL-0001;Parque Natural Municipal Felisberto Neves;Parque;Centro;Região central de Betim;290000;disponivel;Preservar vegetação nativa e trilhas existentes.;sim;;
+BETIM-REAL-0002;Parque Ecológico Municipal Cléo Barbosa;Parque;Parque das Cachoeiras;Avenida Palmério Ferrita Neto, 1680;17500;disponivel;Manter equipamentos de lazer e circulação livres.;sim;;
+BETIM-REAL-0003;Centro de Educação Ambiental Geraldo Henrique Rodrigues Neves;Área pública;Ingá;Avenida Edméia Mattos Lazzarotti, 3000;5000;disponivel;Uso compatível com educação ambiental e atividades guiadas.;sim;;
+BETIM-REAL-0004;Parque Ecológico Matinha do Ingá;Parque;Bueno Franco;Parque Ecológico Matinha do Ingá, bairro Bueno Franco;70000;disponivel;Priorizar preservação ambiental e uso recreativo leve.;sim;;
+BETIM-REAL-0005;Parque Ecológico Chico Mendes;Parque;São Caetano;Parque Ecológico Chico Mendes, bairro São Caetano;25000;disponivel;Preservar trilhas, gramados e equipamentos esportivos.;sim;;
+BETIM-REAL-0006;Horto Municipal Homero Gomes do Amaral;Área pública;Horto;Rua Redelvim Andrade, 300;15000;disponivel;Respeitar agenda esportiva e uso comunitário do equipamento.;sim;;
+BETIM-REAL-0007;Arena Oficial de Vôlei de Praia do Horto;Arena esportiva;Horto;Rua Redelvim Andrade, 300;288;disponivel;Intervenções não podem comprometer a prática esportiva oficial.;sim;;
+BETIM-REAL-0008;Ginásio Poliesportivo Divino Ferreira Braga;Ginásio;Horto;Rua Redelvim Andrade, 300;6000;disponivel;Uso sujeito ao calendário esportivo e de eventos municipais.;sim;;
+BETIM-REAL-0009;Complexo Esportivo Riccardo Medioli;Complexo esportivo;Jardim Teresópolis;Rua Dulce Brandão, 52;12000;disponivel;Preservar quadras, pista e circulação pública do complexo.;sim;;
+BETIM-REAL-0010;Campo de Futebol do Petrovale;Campo de futebol;Petrovale;Rua Paraguai, esquina com rua Peru;7000;disponivel;Manter área livre para partidas e treinos comunitários.;sim;;
+BETIM-REAL-0011;Campo de Futebol do bairro Laranjeiras;Campo de futebol;Laranjeiras;Campo de futebol do bairro Laranjeiras;7000;disponivel;Intervenções devem preservar o uso esportivo do campo.;sim;;
+BETIM-REAL-0012;Campo João Evangelista Souza;Campo de futebol;Pingo d’Água;Rua Alcides Fernandes de Souza, s/n;7000;disponivel;Preservar alambrado, vestiários e acessos existentes.;sim;;
+BETIM-REAL-0013;Campo Dr. Orestes Diniz (Reuminas);Campo de futebol;Colônia Santa Isabel;Rua Allan Kardec, 99;7000;disponivel;Intervenções não podem comprometer jogos e campeonatos amadores.;sim;;
+BETIM-REAL-0014;Campo Alcides Braz;Campo de futebol;Citrolândia;Rua Mário Campos Lara, 107;7000;disponivel;Preservar iluminação e estrutura de apoio esportivo.;sim;;
+BETIM-REAL-0015;Praça do Encontro;Praça;Centro;Avenida Edmeia Mattos Lazzarotti;5000;disponivel;Manter pista de caminhada, cascata e brinquedos livres.;sim;;
+BETIM-REAL-0016;Praça do bairro Paquetá;Praça;Paquetá;Entre as ruas Esperantina, L e Pirajú;1800;disponivel;Preservar playground, academia popular e travessias internas.;sim;;
+BETIM-REAL-0017;Praça em frente à Igreja Nossa Senhora de Fátima;Praça;Colônia Santa Isabel;Em frente à Igreja Nossa Senhora de Fátima;900;disponivel;Preservar acessibilidade, bancos e paisagismo existentes.;sim;;
+BETIM-REAL-0018;Praça do bairro Dicalino Cabral;Praça;Dicalino Cabral;Próxima à entrada da pista de caminhada da bacia de detenção do córrego Goiabinha;1200;disponivel;Intervenções devem preservar passadiços e academia popular.;sim;;
+BETIM-REAL-0019;Praça do Icaivera;Praça;Icaivera;Cruzamento da rua Etra com a avenida Yete;960;disponivel;Preservar playground, mesas de jogos e paisagismo previsto.;sim;;
+BETIM-REAL-0020;Praça da Vila Cristina;Praça;Vila Cristina;Ao lado direito do viaduto Mater Dei, próximo à Avenida A e à rua José Amaral da Silva;1500;disponivel;Validar limites exatos da área antes de implantação definitiva.;sim;;
+BETIM-REAL-0021;Praça Raimundo Rafael de Souza;Praça;Cruzeiro do Sul;Entre as ruas Cinco, Dezessete e Dezoito;260;disponivel;Preservar quadra poliesportiva e circulação local.;sim;;
