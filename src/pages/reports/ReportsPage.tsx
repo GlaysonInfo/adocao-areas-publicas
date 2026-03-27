@@ -889,7 +889,7 @@ export function ReportsPage() {
 
             {/* âœ… NOVO: ExceÃ§Ãµes / GovernanÃ§a */}
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>ExceÃ§Ãµes / GovernanÃ§a</h3>
+              <h3>Exceções / Governança</h3>
               <p className="muted" style={{ marginTop: 6 }}>
                 Fonte: event-log de <code>mvp_proposals_v1</code> (history[]).
               </p>
@@ -949,7 +949,7 @@ export function ReportsPage() {
             </div>
 
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>ObservaÃ§Ã£o</h3>
+              <h3>Observação </h3>
               <p style={{ marginTop: 6, opacity: 0.85 }}>
                 Se algum painel ficar zerado:
                 <br />- Kanban depende de <code>moveProposal(..., actor_role)</code>.
@@ -1029,7 +1029,7 @@ export function ReportsPage() {
           </div>
         ) : null}
 
-        {/* EM OUTROS Ã“RGÃƒOS */}
+        {/* EM OUTROS ÓRGÃOS */}
         {tab === "em_analise_outros" ? (
           <div>
             <div
@@ -1246,11 +1246,11 @@ export function ReportsPage() {
               <h3>Produtividade - SEMAD (por eventos)</h3>
 
               {!semadProd ? (
-                <p style={{ opacity: 0.75 }}>Selecione um período vÃ¡lido.</p>
+                <p style={{ opacity: 0.75 }}>Selecione um período válido.</p>
               ) : (
                 <>
                   <p style={{ marginTop: 6 }}>
-                    MovimentaÃ§Ãµes executadas (SEMAD): <strong>{semadProd.total_moves}</strong>
+                    Movimentações executadas (SEMAD): <strong>{semadProd.total_moves}</strong>
                   </p>
                   <p>
                     Ajustes solicitados (SEMAD): <strong>{semadProd.total_adjustments_requested}</strong>
@@ -1269,9 +1269,9 @@ export function ReportsPage() {
 
                   <hr className="hr" />
 
-                  <h3 style={{ marginTop: 0 }}>TransiÃ§Ãµes mais frequentes</h3>
+                  <h3 style={{ marginTop: 0 }}>Transações mais frequentes</h3>
                   {semadProd.transitions.length === 0 ? (
-                    <p style={{ opacity: 0.75 }}>Sem movimentaÃ§Ãµes registradas no período.</p>
+                    <p style={{ opacity: 0.75 }}>Sem movimentação registradas no período.</p>
                   ) : (
                     <ul style={{ margin: 0, paddingLeft: 18 }}>
                       {semadProd.transitions.map((t: any) => (
@@ -1288,11 +1288,11 @@ export function ReportsPage() {
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
               <h3>Nota técnica</h3>
               <p style={{ marginTop: 6, opacity: 0.85 }}>
-                Este painel usa somente evidÃªncia do <strong>event-log</strong>:
+                Este painel usa somente evidência do <strong>event-log</strong>:
                 <br />- Kanban: <code>move</code> / <code>request_adjustments</code>
                 <br />- Override: <code>override_no_vistoria</code>
                 <br />
-                Se â€œOverrides sem vistoriaâ€ ficar zerado, verifique se o fluxo estÃ¡ persistindo o evento no{" "}
+                Se Overrides sem vistoria ficar zerado, verifique se o fluxo está persistindo o evento no{" "}
                 <code>history[]</code> antes do <code>move</code>.
               </p>
             </div>
@@ -1340,7 +1340,7 @@ export function ReportsPage() {
                     {slaRows.length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ padding: 12, opacity: 0.75 }}>
-                          Selecione um período vÃ¡lido.
+                          Selecione um período vlido.
                         </td>
                       </tr>
                     ) : null}
@@ -1349,7 +1349,7 @@ export function ReportsPage() {
               </div>
 
               <p style={{ marginTop: 12, opacity: 0.85 }}>
-                Para um SLA â€œoficialâ€, as metas devem ser definidas por norma interna (dias Ãºteis vs corridos) e a violaÃ§Ã£o pode ser separada em:
+                Para um SLA OFICIAL, as metas devem ser definidas por norma interna (dias úteis vs corridos) e a violaÃ§Ã£o pode ser separada em:
                 (i) segmentos encerrados no período; (ii) itens censurados (ainda abertos).
               </p>
             </div>
