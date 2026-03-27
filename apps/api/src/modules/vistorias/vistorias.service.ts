@@ -80,7 +80,7 @@ export async function createVistoria(input: VistoriaCreateInput) {
 }
 
 export async function getVistoria(id: string) {
-  const v = await getVistoriaById(id, true);
+  const v: any = await getVistoriaById(id, true);
   if (!v) throw new ApiError(404, "Vistoria não encontrada.");
 
   const dto = mapVistoriaDto(v);

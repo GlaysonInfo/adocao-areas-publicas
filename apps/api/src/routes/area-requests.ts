@@ -15,7 +15,9 @@ function nextProtocol() {
 }
 
 export async function areaRequestRoutes(app: FastifyInstance) {
-  app.get(
+  const routes: any = app;
+
+  routes.get(
     "/area-requests",
     {
       schema: {
@@ -30,7 +32,7 @@ export async function areaRequestRoutes(app: FastifyInstance) {
     }
   );
 
-  app.get(
+  routes.get(
     "/area-requests/:id",
     {
       schema: {
@@ -52,7 +54,7 @@ export async function areaRequestRoutes(app: FastifyInstance) {
     }
   );
 
-  app.post(
+  routes.post(
     "/area-requests",
     {
       schema: {
@@ -94,7 +96,7 @@ export async function areaRequestRoutes(app: FastifyInstance) {
     }
   );
 
-  app.post(
+  routes.post(
     "/area-requests/:id/start-verification",
     {
       schema: {
@@ -135,7 +137,7 @@ export async function areaRequestRoutes(app: FastifyInstance) {
     }
   );
 
-  app.post(
+  routes.post(
     "/area-requests/:id/sisgeo",
     {
       schema: {
@@ -182,7 +184,7 @@ export async function areaRequestRoutes(app: FastifyInstance) {
     }
   );
 
-  app.post(
+  routes.post(
     "/area-requests/:id/decision",
     {
       schema: {

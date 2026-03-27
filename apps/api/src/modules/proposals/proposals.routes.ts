@@ -142,7 +142,7 @@ class HttpError extends Error {
 }
 
 export async function proposalsRoutes(app: FastifyInstance) {
-  const tp = app.withTypeProvider<ZodTypeProvider>();
+  const tp: any = app.withTypeProvider<ZodTypeProvider>();
   const prisma = app.prisma;
 
   // =========================

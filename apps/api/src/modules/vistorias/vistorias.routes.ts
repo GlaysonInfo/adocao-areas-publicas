@@ -28,7 +28,7 @@ import {
 } from "./vistorias.service";
 
 export async function vistoriasRoutes(app: FastifyInstance) {
-  const tp = app.withTypeProvider<ZodTypeProvider>();
+  const tp: any = app.withTypeProvider<ZodTypeProvider>();
 
   // LIST
   tp.get(

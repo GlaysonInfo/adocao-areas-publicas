@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 
 export const errorHandlerPlugin: FastifyPluginAsync = async (app) => {
-  app.setErrorHandler((err, req, reply) => {
+  app.setErrorHandler((err: any, req, reply) => {
     const status =
       (err as any)?.statusCode && Number.isFinite((err as any).statusCode)
         ? (err as any).statusCode

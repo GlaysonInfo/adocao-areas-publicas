@@ -7,7 +7,7 @@ import { AreaCreateBodyZ, AreaPatchBodyZ, AreaZ, AreasListQueryZ } from "./areas
 
 export const areasRoutes: FastifyPluginAsync = async (app) => {
   // ✅ garanta inferência Zod nas rotas deste módulo
-  const tp = app.withTypeProvider<ZodTypeProvider>();
+  const tp: any = app.withTypeProvider<ZodTypeProvider>();
 
   tp.get(
     "/areas",
