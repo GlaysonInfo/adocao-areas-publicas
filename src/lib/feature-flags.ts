@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-﻿// src/lib/feature-flags.ts
-=======
 // src/lib/feature-flags.ts
-
->>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
 function parseBooleanEnv(value: unknown, fallback = false) {
   if (value == null) return fallback;
   const s = String(value).trim().toLowerCase();

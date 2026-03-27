@@ -1,14 +1,8 @@
-<<<<<<< HEAD
 ﻿// src/services/proposals.service.ts
 import type { KanbanColuna, PropostaAdocao } from "../domain/proposal";
 import type { ProposalExtraEventInput } from "../storage/proposals";
 import { useHttpApiEnabled } from "../lib/feature-flags";
 import { proposalsHttpService } from "./http/proposals-http.service";
-=======
-// src/services/proposals.service.ts
-import type { KanbanColuna, PropostaAdocao } from "../domain/proposal";
-import type { ProposalExtraEventInput } from "../storage/proposals";
->>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
 import {
   adopterUpdateAndResubmitFromAdjustments,
   computeConsolidatedByPeriod,
@@ -25,12 +19,20 @@ import {
   subscribeProposals,
 } from "../storage/proposals";
 
-<<<<<<< HEAD
-const PROPOSALS_KEY = "mvp_proposals_v1";
+const PROPOSALS_CACHE_KEY = "mvp_proposals_v1";
 
-function writeProposalsCache(items: PropostaAdocao[]) {
-  localStorage.setItem(PROPOSALS_KEY, JSON.stringify(items));
-}
+const cacheProposals = (items: PropostaAdocao[]) => localStorage.setItem(PROPOSALS_CACHE_KEY, JSON.stringify(items));
+const readProposalsCache = (): PropostaAdocao[] => {
+  try {
+    const raw = localStorage.getItem(PROPOSALS_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as PropostaAdocao[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const withHttpOrLocal = async <T>(localFn: () => T, httpFn: () => Promise<T>): Promise<T> =>
+  useHttpApiEnabled() ? httpFn() : Promise.resolve(localFn());
 
 export const proposalsService = {
   subscribe: subscribeProposals,
@@ -51,28 +53,6 @@ export const proposalsService = {
     return createProposal(input, actorRole);
   },
 
-=======
-/**
- * Fachada de serviço para Propostas.
- *
- * Encapsula leitura, escrita e métricas do domínio de propostas.
- * Mantém a UI desacoplada do storage local.
- */
-export const proposalsService = {
-  subscribe: subscribeProposals,
-  listAll(): PropostaAdocao[] {
-    return listProposals();
-  },
-  listMine(ownerRole: string | null | undefined): PropostaAdocao[] {
-    return listMyProposals(ownerRole);
-  },
-  getById(id: string): PropostaAdocao | null {
-    return getProposalById(id);
-  },
-  create(input: PropostaAdocao, actorRole: string) {
-    return createProposal(input, actorRole);
-  },
->>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
   move(
     id: string,
     to: KanbanColuna,
@@ -82,10 +62,7 @@ export const proposalsService = {
   ) {
     return moveProposal(id, to, actorRole, note, extraEvents);
   },
-<<<<<<< HEAD
 
-=======
->>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
   resubmitFromAdjustments(
     id: string,
     input: {
@@ -97,7 +74,6 @@ export const proposalsService = {
   ) {
     return adopterUpdateAndResubmitFromAdjustments(id, input, actorRole);
   },
-<<<<<<< HEAD
 
   quickResubmit(id: string, actorRole: string) {
     return resubmitAfterAdjustments(id, actorRole);
@@ -124,26 +100,19 @@ export const proposalsService = {
   },
 
   async listAllAsync(): Promise<PropostaAdocao[]> {
-    if (!useHttpApiEnabled()) return listProposals();
-    return proposalsHttpService.listAll();
+    return withHttpOrLocal(listProposals, proposalsHttpService.listAll.bind(proposalsHttpService));
   },
 
   async listMineAsync(ownerRole: string | null | undefined): Promise<PropostaAdocao[]> {
-    if (!useHttpApiEnabled()) return listMyProposals(ownerRole);
-    return proposalsHttpService.listMine(ownerRole);
+    if (!ownerRole?.trim()) return [];
+    return withHttpOrLocal(() => listMyProposals(ownerRole), () => proposalsHttpService.listMine(ownerRole));
   },
 
   async getByIdAsync(id: string): Promise<PropostaAdocao | null> {
-    if (!useHttpApiEnabled()) return getProposalById(id);
-    return proposalsHttpService.getById(id);
+    return withHttpOrLocal(() => getProposalById(id), () => proposalsHttpService.getById(id));
   },
 
-  async createAsync(input: {
-    area_id: string;
-    area_nome: string;
-    descricao_plano: string;
-    owner_role: string;
-  }): Promise<PropostaAdocao> {
+  async createAsync(input: { area_id: string; area_nome: string; descricao_plano: string; owner_role: string }): Promise<PropostaAdocao> {
     if (!useHttpApiEnabled()) {
       const now = new Date().toISOString();
       const proposal: PropostaAdocao = {
@@ -163,50 +132,27 @@ export const proposalsService = {
     }
 
     const created = await proposalsHttpService.create(input);
-    await this.syncFromApi();
+    const items = await proposalsHttpService.listAll();
+    cacheProposals(items);
     return created;
   },
 
-  async moveAsync(input: {
-    id: string;
-    to: KanbanColuna;
-    actor_role: string;
-    note?: string;
-  }): Promise<PropostaAdocao> {
+  async moveAsync(input: { id: string; to: KanbanColuna; actor_role: string; note?: string }): Promise<PropostaAdocao> {
     if (!useHttpApiEnabled()) {
       return moveProposal(input.id, input.to, input.actor_role, input.note);
     }
 
     const moved = await proposalsHttpService.move(input);
-    await this.syncFromApi();
+    const items = await proposalsHttpService.listAll();
+    cacheProposals(items);
     return moved;
   },
 
   async syncFromApi(): Promise<PropostaAdocao[]> {
     if (!useHttpApiEnabled()) return listProposals();
+
     const items = await proposalsHttpService.listAll();
-    writeProposalsCache(items);
+    cacheProposals(items);
     return items;
   },
 };
-=======
-  quickResubmit(id: string, actorRole: string) {
-    return resubmitAfterAdjustments(id, actorRole);
-  },
-  listEvents() {
-    return listProposalEvents();
-  },
-  listEventsBetween(fromIso: string, toIso: string) {
-    return listProposalEventsBetween(fromIso, toIso);
-  },
-  computeConsolidated(fromIso: string, toIso: string) {
-    return computeConsolidatedByPeriod(fromIso, toIso);
-  },
-  computeSemadProductivity(fromIso: string, toIso: string) {
-    return computeSemadProductivity(fromIso, toIso);
-  },
-  computeSlaByColumn(fromIso: string, toIso: string) {
-    return computeSlaByColumn(fromIso, toIso);
-  },
-};
->>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6

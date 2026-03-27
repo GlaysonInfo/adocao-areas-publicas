@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-﻿// src/services/vistorias.service.ts
-=======
 // src/services/vistorias.service.ts
->>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
 import type {
   Vistoria,
   VistoriaAnexoMeta,
@@ -24,12 +20,9 @@ import {
   updateVistoriaStatus,
 } from "../storage/vistorias";
 
-<<<<<<< HEAD
-=======
 /**
  * Fachada de serviço para Vistorias.
  */
->>>>>>> 0f907c1538084d200f2ef0204655826e8f67f6a6
 export const vistoriasService = {
   subscribe: subscribeVistorias,
   listAll(): Vistoria[] {
