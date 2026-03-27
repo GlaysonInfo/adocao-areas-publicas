@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AreaStatus } from "../../domain/area";
+import { decodeTextBytes } from "../../lib/text-normalize";
 import { areasService, type ImportReport } from "../../services";
 
 type ParseResult = {
@@ -11,7 +12,7 @@ type ParseResult = {
 };
 
 type PreviewRow = {
-  rowNumber: number; // linha real do CSV (comeÃ§a em 2)
+  rowNumber: number; // linha real do CSV (começa em 2)
   action: "criar" | "atualizar" | "pular";
   errors: string[];
   values: Record<string, string>;
@@ -115,7 +116,7 @@ function parseCSV(text: string): ParseResult {
 }
 
 function buildTemplateCSV() {
-  // mÃ­nimo + recomendados
+  // mínimo + recomendados
   const headers = [
     "codigo",
     "nome",
@@ -132,8 +133,8 @@ function buildTemplateCSV() {
   const sample = [
     [
       "BETIM-AREA-0001",
-      "PraÃ§a da Matriz",
-      "PraÃ§a",
+      "Praça da Matriz",
+      "Praça",
       "Centro",
       "Av. Principal, s/n",
       "850",
@@ -151,7 +152,7 @@ function buildTemplateCSV() {
       "Av. das Palmeiras, 1200",
       "420",
       "em_adocao",
-      "Manter visibilidade de sinalizaÃ§Ã£o viÃ¡ria.",
+      "Manter visibilidade de sinalização viária.",
       "sim",
       "",
       "",
@@ -186,7 +187,7 @@ export function AdminAreasImportPage() {
   const headerErrors = useMemo(() => {
     if (!parsed) return [];
     const missing = requiredHeaders.filter((h) => !parsed.headers.includes(h));
-    return missing.map((h) => `CabeÃ§alho obrigatÃ³rio ausente: "${h}".`);
+    return missing.map((h) => `Cabeçalho obrigatório ausente: "${h}".`);
   }, [parsed]);
 
   const preview = useMemo(() => {
@@ -225,22 +226,22 @@ export function AdminAreasImportPage() {
       if (!tipo) errors.push("Sem 'tipo'.");
       if (!bairro) errors.push("Sem 'bairro'.");
       if (!logradouro) errors.push("Sem 'logradouro'.");
-      if (metr == null) errors.push("metragem_m2 invÃ¡lida (use nÃºmero; aceita vÃ­rgula).");
-      if (!st) errors.push('status invÃ¡lido (use: "disponivel" | "em_adocao" | "adotada").');
+      if (metr == null) errors.push("metragem_m2 inválida (use número; aceita vírgula).");
+      if (!st) errors.push('status inválido (use: "disponivel" | "em_adocao" | "adotada").');
 
       // campos opcionais
       if (values.latitude_centro) {
         const lat = parseNumberBR(values.latitude_centro);
-        if (lat == null) errors.push("latitude_centro invÃ¡lida.");
+        if (lat == null) errors.push("latitude_centro inválida.");
       }
       if (values.longitude_centro) {
         const lon = parseNumberBR(values.longitude_centro);
-        if (lon == null) errors.push("longitude_centro invÃ¡lida.");
+        if (lon == null) errors.push("longitude_centro inválida.");
       }
 
       if (values.ativo) {
-        // sÃ³ valida â€œse parece booleanâ€
-        parseBool(values.ativo, true); // não gera erro, mas â€œnormalizaâ€
+        // só valida "se parece boolean"
+        parseBool(values.ativo, true); // não gera erro, mas normaliza
       }
 
       let action: PreviewRow["action"] = "pular";
@@ -275,9 +276,14 @@ export function AdminAreasImportPage() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      setCsvText(String(reader.result ?? ""));
+      const result = reader.result;
+      if (result instanceof ArrayBuffer) {
+        setCsvText(decodeTextBytes(result));
+        return;
+      }
+      setCsvText(String(result ?? ""));
     };
-    reader.readAsText(file, "utf-8");
+    reader.readAsArrayBuffer(file);
   };
 
   const downloadTemplate = () => {
@@ -299,12 +305,12 @@ export function AdminAreasImportPage() {
 
     const hasAnyValid = preview.rows.some((r) => r.action === "criar" || r.action === "atualizar");
     if (!hasAnyValid) {
-      alert("não hÃ¡ linhas vÃ¡lidas para aplicar (todas estÃ£o como 'Pular'). Ajuste o CSV e tente novamente.");
+      alert("não há linhas válidas para aplicar (todas estão como 'Pular'). Ajuste o CSV e tente novamente.");
       return;
     }
 
     const ok = confirm(
-      `Aplicar importaÃ§Ã£o?\n\nCriar: ${preview.counts.criar}\nAtualizar: ${preview.counts.atualizar}\nPular: ${preview.counts.pular}\n\nIsso atualizarÃ¡ o armazenamento local (MVP).`
+      `Aplicar importação?\n\nCriar: ${preview.counts.criar}\nAtualizar: ${preview.counts.atualizar}\nPular: ${preview.counts.pular}\n\nIsso atualizará o armazenamento local (MVP).`
     );
     if (!ok) return;
 
@@ -377,7 +383,7 @@ export function AdminAreasImportPage() {
 
             {headerErrors.length > 0 ? (
               <div className="card pad" style={{ marginTop: 12, background: "rgba(255,255,255,.72)" }}>
-                <h3 style={{ marginTop: 0 }}>Problemas no cabeÃ§alho</h3>
+                <h3 style={{ marginTop: 0 }}>Problemas no cabeçalho</h3>
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {headerErrors.map((e, i) => (
                     <li key={i}>{e}</li>
@@ -401,9 +407,9 @@ export function AdminAreasImportPage() {
                       className="btn btn--primary"
                       disabled={!canApply || busy}
                       onClick={applyImport}
-                      title={!canApply ? "Corrija o cabeÃ§alho antes de aplicar." : "Aplicar importaÃ§Ã£o"}
+                      title={!canApply ? "Corrija o cabeçalho antes de aplicar." : "Aplicar importação"}
                     >
-                      {busy ? "Aplicando..." : "Aplicar importaÃ§Ã£o"}
+                      {busy ? "Aplicando..." : "Aplicar importação"}
                     </button>
                   </div>
                 </div>

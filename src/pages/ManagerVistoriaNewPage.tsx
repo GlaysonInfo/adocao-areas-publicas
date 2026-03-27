@@ -171,7 +171,7 @@ export function ManagerVistoriaNewPage() {
               Localização (texto) - obrigatÃ³rio
               <input
                 {...register("local_texto")}
-                placeholder="Ex.: PraÃ§a X, Av. Y, prÃ³ximo a..."
+                placeholder="Ex.: Praça X, Av. Y, prÃ³ximo a..."
                 style={{ width: "100%", marginTop: 6, padding: 10, borderRadius: 12, border: "1px solid var(--border)" }}
               />
               {errors.local_texto ? <div style={{ color: "crimson" }}>{errors.local_texto.message}</div> : null}

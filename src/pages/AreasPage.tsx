@@ -59,7 +59,7 @@ export function AreasPage() {
 
   const filtradas = useMemo(() => {
     return areas.filter((a) => {
-      const okTipo = tipo === "todos" ? true : String(a.tipo) === tipo;
+      const okTipo = tipo === "todos" ? true : displayText(a.tipo) === tipo;
       const okStatus = status === "todos" ? true : String(a.status) === status;
       const okBairro = bairro === "todos" ? true : String(a.bairro) === bairro;
       return okTipo && okStatus && okBairro;
@@ -173,7 +173,7 @@ export function AreasPage() {
 
                         {/* Meta em linhas separadas (evita â€œgrudarâ€) */}
                         <div className="item__meta">
-                          <strong>Tipo:</strong> {String(a.tipo)}{" "}
+                          <strong>Tipo:</strong> {displayText(a.tipo)}{" "}
                           <span aria-hidden="true">:</span>{" "}
                           <strong>Status:</strong> {statusLabel(a.status as AreaStatus)}
                         </div>
@@ -193,7 +193,7 @@ export function AreasPage() {
                       {/* Badges com espaÃ§amento */}
                       <div className="badges" aria-label="Etiquetas da Área" style={{ display: "flex", gap: 8 }}>
                         <span className={badge.cls}>{badge.text}</span>
-                        <span className="badge badge--neutral">{String(a.tipo)}</span>
+                        <span className="badge badge--neutral">{displayText(a.tipo)}</span>
                       </div>
                     </div>
 
