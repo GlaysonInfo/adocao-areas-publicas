@@ -1,123 +1,49 @@
-// apps/api/src/server.ts
+﻿// apps/api/src/server.ts
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import swagger from "@fastify/swagger";
-import swaggerUi from "@fastify/swagger-ui";
-import cookie from "@fastify/cookie";
-
+import sensible from "@fastify/sensible";
 import {
-  ZodTypeProvider,
-  validatorCompiler,
   serializerCompiler,
+  validatorCompiler,
   jsonSchemaTransform,
 } from "fastify-type-provider-zod";
 
-import { PrismaClient } from "@prisma/client";
+import { healthRoutes } from "./routes/health";
+import { areaRoutes } from "./routes/areas";
+import { proposalRoutes } from "./routes/proposals";
+import { areaRequestRoutes } from "./routes/area-requests";
+import { vistoriaRoutes } from "./routes/vistorias";
 
-import { config, corsOrigins } from "./config";
+const app = Fastify({
+  logger: true,
+});
 
-import { areasRoutes } from "./modules/areas/areas.routes";
-import { vistoriasRoutes } from "./modules/vistorias/vistorias.routes";
+app.setValidatorCompiler(validatorCompiler);
+app.setSerializerCompiler(serializerCompiler);
 
-import { auth_module } from "./modules/auth";
-import { proposals_module } from "./modules/proposals/proposals.module";
+await app.register(cors, {
+  origin: true,
+});
 
-export async function buildServer() {
-  const app = Fastify({
-    logger: { level: config.LOG_LEVEL },
-  }).withTypeProvider<ZodTypeProvider>();
+await app.register(sensible);
 
-  app.setValidatorCompiler(validatorCompiler);
-  app.setSerializerCompiler(serializerCompiler);
+app.get("/", async () => {
+  return {
+    service: "adocao-areas-api",
+    message: "API online",
+    docs_hint: "Rotas disponíveis: /health, /areas, /proposals, /area-requests, /vistorias",
+  };
+});
 
-  // Prisma
-  const prisma = new PrismaClient();
-  app.decorate("prisma", prisma);
+await app.register(healthRoutes);
+await app.register(areaRoutes);
+await app.register(proposalRoutes);
+await app.register(areaRequestRoutes);
+await app.register(vistoriaRoutes);
 
-  app.addHook("onClose", async () => {
-    await prisma.$disconnect();
-  });
+const port = Number(process.env.PORT ?? 3333);
+const host = process.env.HOST ?? "0.0.0.0";
 
-  // CORS (cookies + credentials)
-  await app.register(cors, {
-    origin: corsOrigins.length ? corsOrigins : true,
-    credentials: true,
-  });
-
-  // Cookie (GLOBAL) - necessário para refresh cookie
-  await app.register(cookie, {
-    secret: process.env.COOKIE_SECRET ?? "dev_cookie_secret_change_me",
-    hook: "onRequest",
-  });
-
-  // Auth config (GLOBAL) - precisa estar visível para TODOS os módulos (Fastify encapsulation)
-  app.decorate("auth_config", {
-    jwt_access_secret: process.env.JWT_ACCESS_SECRET ?? "dev_jwt_secret_change_me",
-    access_token_ttl_minutes: Number(process.env.ACCESS_TOKEN_TTL_MINUTES ?? 15),
-    refresh_token_ttl_days: Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30),
-    reset_token_ttl_minutes: Number(process.env.RESET_TOKEN_TTL_MINUTES ?? 45),
-    refresh_cookie_name: String(process.env.REFRESH_COOKIE_NAME ?? "refresh_token"),
-  });
-
-  // Swagger
-  if (config.SWAGGER_ENABLED) {
-    await app.register(swagger, {
-      openapi: {
-        info: { title: "Adote uma Área — API", version: "0.1.0" },
-
-        // ✅ habilita Bearer JWT no Swagger UI
-        components: {
-          securitySchemes: {
-            bearerAuth: {
-              type: "http",
-              scheme: "bearer",
-              bearerFormat: "JWT",
-            },
-          },
-        },
-
-        // ✅ aplica bearer por padrão em todas as rotas na documentação
-        // (desligue em rotas públicas com schema.security = [])
-        security: [{ bearerAuth: [] }],
-      },
-      transform: jsonSchemaTransform,
-    });
-
-    await app.register(swaggerUi, {
-      routePrefix: "/docs",
-      uiConfig: {
-        persistAuthorization: true,
-      },
-    });
-  }
-
-  // Health
-  app.get("/healthz", async () => ({
-    ok: true,
-    env: config.NODE_ENV,
-  }));
-
-  // Módulos (rotas internas já com /v1 dentro)
-  await app.register(auth_module);
-  await app.register(proposals_module);
-
-  // Rotas com prefix /v1
-  await app.register(areasRoutes, { prefix: "/v1" });
-  await app.register(vistoriasRoutes, { prefix: "/v1" });
-
-  return app;
-}
-
-// 👇 Deixe o module augmentation FORA da função (no final do arquivo)
-declare module "fastify" {
-  interface FastifyInstance {
-    prisma: PrismaClient;
-    auth_config: {
-      jwt_access_secret: string;
-      access_token_ttl_minutes: number;
-      refresh_token_ttl_days: number;
-      reset_token_ttl_minutes: number;
-      refresh_cookie_name: string;
-    };
-  }
-}
+app.listen({ port, host }).then(() => {
+  app.log.info(`API rodando em http://${host}:${port}`);
+});

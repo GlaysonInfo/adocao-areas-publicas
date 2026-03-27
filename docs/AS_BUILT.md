@@ -153,7 +153,7 @@ ee80e6c docs: atualiza arquitetura/handoff/validation (auto)
 5519d75 docs: atualiza changelog e as-built
 ff1ba42 chore(data): move csv de import para data/import
 aa55900 feat(vistoria): laudo estruturado + fluxo e dados de áreas para import
-2657a6c feat(reports): gate override_no_vistoria na transição SEMAD->ECOS + contagem no relatório
+2657a6c feat(reports): gate override_no_vistoria na transição SEMADECOS + contagem no relatório
 350ddb2 feat: páginas e storage de solicitações de área
 f17af42 docs: refresh as-built
 ab50c2a docs: as-built snapshot

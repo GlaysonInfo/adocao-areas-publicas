@@ -278,7 +278,7 @@ if ($P_PROPOSALS_MOVE) {
       note = "Movimento automático (script validação vistorias)."
     }
     if ($moved -and (Has-Prop $moved "kanban_coluna") -and $moved.kanban_coluna) {
-      Write-Host "proposal moved -> kanban_coluna=$($moved.kanban_coluna)"
+      Write-Host "proposal moved  kanban_coluna=$($moved.kanban_coluna)"
     }
   } catch {
     Write-Host "Aviso: move de proposal falhou (pode ser esperado). Erro: $($_.Exception.Message)"
@@ -329,7 +329,7 @@ if ($replay1 -and $vistoria.status -and ($replay1 -ne $vistoria.status)) {
   exit 2
 }
 
-Write-Section "5) Schedule -> Execute -> Issue-Laudo (payload mínimo via OpenAPI required)"
+Write-Section "5) Schedule  Execute  Issue-Laudo (payload mínimo via OpenAPI required)"
 function Call-Step([string]$pathTemplate, [string]$method, [hashtable]$defaults) {
   $path = $pathTemplate.Replace("{id}", $vistoria.id)
   $schema = Get-Schema-For-RequestBody $openapi $pathTemplate $method

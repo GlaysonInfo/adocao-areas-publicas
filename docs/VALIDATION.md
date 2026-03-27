@@ -309,7 +309,7 @@ Registrar o estado persistido do MVP sem expor dados sensíveis.
         },
         {
             "id_usuario": "u-adm",
-            "nome": "Gestor Adm. PÃºblica",
+            "nome": "Gestor Adm. pública",
             "role": "gestor_adm_publica"
         },
         {

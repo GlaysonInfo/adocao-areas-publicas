@@ -126,7 +126,7 @@ function Set-UserRole-ByEmail {
   $tmpSql = New-TemporaryFile
   [System.IO.File]::WriteAllText($tmpSql.FullName, $sql, [System.Text.UTF8Encoding]::new($false))
 
-  Write-Host "SET_ROLE: $Email -> $Role"
+  Write-Host "SET_ROLE: $Email  $Role"
   & npx prisma db execute --schema $SchemaPath --file "$($tmpSql.FullName)" | Out-Host
 
   Remove-Item $tmpSql.FullName -Force -ErrorAction SilentlyContinue
@@ -225,7 +225,7 @@ Write-Host ("HTTP=" + $getP.status_code)
 Write-Host $getP.raw
 Write-Host ""
 
-# G) SEMAD move protocolo -> analise_semad
+# G) SEMAD move protocolo  analise_semad
 Write-Host "--- SEMAD POST /v1/proposals/{A}/move to=analise_semad ---"
 $move = Curl-Request -Method "POST" -Url "$BaseUrl/v1/proposals/$PROPOSAL_ID/move" `
   -Headers @{ Authorization=("Bearer " + $ACCESS_SEMAD) } `

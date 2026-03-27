@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +9,8 @@ import type { DocumentoMeta, DocumentoTipo, PropostaAdocao } from "../domain/pro
 import { areasService, proposalsService } from "../services";
 import { useAuth } from "../auth/AuthContext";
 import { next_protocol as nextProtocol } from "../storage/protocol";
+import { useHttpApiEnabled } from "../lib/feature-flags";
+import { displayText } from "../lib/text";
 
 const doc_types: { tipo: DocumentoTipo; label: string }[] = [
   { tipo: "carta_intencao", label: "Carta de Intenção (obrigatório)" },
@@ -39,11 +41,20 @@ export function ProposalNewPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const pre_area_id = searchParams.get("area_id") ?? "";
+  const httpEnabled = useHttpApiEnabled();
 
   const [tick, setTick] = useState(0);
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => areasService.subscribe(() => setTick((t) => t + 1)), []);
+
+  useEffect(() => {
+    if (!httpEnabled) return;
+    areasService.syncFromApi().catch((err) => {
+      console.error("Falha ao sincronizar áreas da API:", err);
+    });
+  }, [httpEnabled]);
 
   const areas_disponiveis = useMemo(() => {
     return areasService.listPublic().filter((a) => a.status === "disponivel" && a.ativo !== false);
@@ -98,34 +109,51 @@ export function ProposalNewPage() {
     };
   }
 
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     if (!areaSelecionada) return;
 
-    const proposta_id = safeUuid();
     const actor_role = role ?? "adotante_pf";
 
-    const proposta: PropostaAdocao = {
-      id: proposta_id,
-      codigo_protocolo: nextProtocol(),
-      area_id: areaSelecionada.id,
-      area_nome: areaSelecionada.nome,
-      descricao_plano: values.descricao_plano,
-      kanban_coluna: "protocolo",
-      documentos: [
-        fileMeta("carta_intencao", values.carta_intencao as FileList),
-        fileMeta("projeto_resumo", values.projeto_resumo as FileList),
-      ],
-      owner_role: actor_role,
-      created_at: nowIso(),
-      updated_at: nowIso(),
-      history: [],
-    };
-
     try {
+      setSubmitting(true);
+
+      if (httpEnabled) {
+        const created = await proposalsService.createAsync({
+          area_id: areaSelecionada.id,
+          area_nome: areaSelecionada.nome,
+          descricao_plano: values.descricao_plano,
+          owner_role: actor_role,
+        });
+
+        navigate(`/minhas-propostas/${encodeURIComponent(created.id)}`, { replace: true });
+        return;
+      }
+
+      const proposta_id = safeUuid();
+
+      const proposta: PropostaAdocao = {
+        id: proposta_id,
+        codigo_protocolo: nextProtocol(),
+        area_id: areaSelecionada.id,
+        area_nome: areaSelecionada.nome,
+        descricao_plano: values.descricao_plano,
+        kanban_coluna: "protocolo",
+        documentos: [
+          fileMeta("carta_intencao", values.carta_intencao as FileList),
+          fileMeta("projeto_resumo", values.projeto_resumo as FileList),
+        ],
+        owner_role: actor_role,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+        history: [],
+      };
+
       proposalsService.create(proposta, actor_role);
       navigate(`/minhas-propostas/${encodeURIComponent(proposta_id)}`, { replace: true });
     } catch (e: any) {
       alert(e?.message ?? "Não foi possível criar a proposta.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -135,7 +163,9 @@ export function ProposalNewPage() {
         <header className="page__header">
           <div className="page__titlewrap">
             <h1 className="page__title">Nova Proposta (wizard)</h1>
-            <p className="page__subtitle">Etapa {step} de 3</p>
+            <p className="page__subtitle">
+              Etapa {step} de 3 {httpEnabled ? "· modo API" : "· modo local"}
+            </p>
           </div>
         </header>
 
@@ -149,7 +179,7 @@ export function ProposalNewPage() {
                     <option value="">Selecione</option>
                     {areas_disponiveis.map((a) => (
                       <option key={a.id} value={a.id}>
-                        {a.nome} — {a.bairro} ({a.metragem_m2} m²)
+                        {displayText(a.nome)} — {displayText(a.bairro)} ({a.metragem_m2} m²)
                       </option>
                     ))}
                   </select>
@@ -159,13 +189,13 @@ export function ProposalNewPage() {
                 {areaSelecionada ? (
                   <div className="card pad" style={{ background: "rgba(255,255,255,.7)" }}>
                     <strong>Área selecionada:</strong>
-                    <div>{areaSelecionada.nome}</div>
+                    <div>{displayText(areaSelecionada.nome)}</div>
                     <div>
-                      {areaSelecionada.bairro} — {areaSelecionada.metragem_m2} m²
+                      {displayText(areaSelecionada.bairro)} — {areaSelecionada.metragem_m2} m²
                     </div>
                     {areaSelecionada.restricoes ? (
                       <div style={{ marginTop: 6 }}>
-                        <strong>Restrições:</strong> {areaSelecionada.restricoes}
+                        <strong>Restrições:</strong> {displayText(areaSelecionada.restricoes)}
                       </div>
                     ) : null}
                   </div>
@@ -220,7 +250,7 @@ export function ProposalNewPage() {
 
                 <div className="card pad" style={{ background: "rgba(255,255,255,.7)" }}>
                   <div>
-                    <strong>Área:</strong> {areaSelecionada?.nome ?? "-"}
+                    <strong>Área:</strong> {displayText(areaSelecionada?.nome, "-")}
                   </div>
 
                   <div style={{ marginTop: 6 }}>
@@ -241,8 +271,8 @@ export function ProposalNewPage() {
                   <button className="btn" type="button" onClick={() => setStep(2)}>
                     Voltar
                   </button>
-                  <button className="btn btn--primary" type="submit">
-                    Enviar e gerar protocolo
+                  <button className="btn btn--primary" type="submit" disabled={submitting}>
+                    {submitting ? "Enviando..." : "Enviar e gerar protocolo"}
                   </button>
                 </div>
               </section>
@@ -253,6 +283,5 @@ export function ProposalNewPage() {
     </div>
   );
 }
-
 
 

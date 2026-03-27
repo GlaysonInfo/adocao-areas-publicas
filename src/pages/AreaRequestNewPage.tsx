@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { z } from "zod";
@@ -23,7 +23,7 @@ function safeUuid(): string {
 const schema = z.object({
   lote: z.string().optional(),
   quadra: z.string().optional(),
-  localizacao_descritiva: z.string().min(8, "Informe uma localizaÃ§Ã£o descritiva (mÃ­n. 8 caracteres)."),
+  localizacao_descritiva: z.string().min(8, "Informe uma Localização descritiva (mÃ­n. 8 caracteres)."),
   descricao_intervencao: z.string().min(10, "Descreva a intervenÃ§Ã£o pretendida (mÃ­n. 10 caracteres)."),
   carta_intencao: z.any(),
   projeto_resumo: z.any(),
@@ -75,7 +75,7 @@ export function AreaRequestNewPage() {
   const captureGeo = () => {
     setGeoMsg(null);
     if (!navigator.geolocation) {
-      setGeoMsg("GeolocalizaÃ§Ã£o nÃ£o suportada neste navegador.");
+      setGeoMsg("GeoLocalização não suportada neste navegador.");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -127,7 +127,7 @@ export function AreaRequestNewPage() {
       areaRequestsService.create(req, actor_role);
       navigate("/minhas-solicitacoes-area", { replace: true });
     } catch (e: any) {
-      alert(e?.message ?? "Erro ao criar solicitaÃ§Ã£o.");
+      alert(e?.message ?? "Erro ao criar solicitação.");
     }
   };
 
@@ -136,8 +136,8 @@ export function AreaRequestNewPage() {
       <div className="page">
         <header className="page__header">
           <div className="page__titlewrap">
-            <h1 className="page__title">Solicitar cadastro de Ã¡rea para adoÃ§Ã£o</h1>
-            <p className="page__subtitle">Use quando a Ã¡rea ainda nÃ£o estÃ¡ cadastrada no sistema.</p>
+            <h1 className="page__title">Solicitar cadastro de Área para adoção</h1>
+            <p className="page__subtitle">Use quando a Área ainda não estÃ¡ cadastrada no sistema.</p>
           </div>
         </header>
 
@@ -155,7 +155,7 @@ export function AreaRequestNewPage() {
             </div>
 
             <label>
-              LocalizaÃ§Ã£o descritiva (rua, referÃªncia, prÃ³ximo ao nÂº etc.)
+              Localização descritiva (rua, referência, prÃ³ximo ao nÂº etc.)
               <textarea className="input" rows={3} {...register("localizacao_descritiva")} />
               {errors.localizacao_descritiva?.message ? <div className="err">{String(errors.localizacao_descritiva.message)}</div> : null}
             </label>
@@ -170,7 +170,7 @@ export function AreaRequestNewPage() {
               </div>
               {geo ? (
                 <div className="muted">
-                  lat={geo.lat} | lng={geo.lng} | acurÃ¡ciaâ‰ˆ{geo.accuracy_m ?? "â€”"}m | {geo.captured_at}
+                  lat={geo.lat} | lng={geo.lng} | acurÃ¡ciaâ‰ˆ{geo.accuracy_m ?? "-"}m | {geo.captured_at}
                 </div>
               ) : (
                 <div className="muted">Sem coordenadas capturadas.</div>
@@ -193,14 +193,14 @@ export function AreaRequestNewPage() {
                 <input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" {...register("projeto_resumo")} />
               </label>
               <label>
-                Fotos de referÃªncia (opcional, mÃºltiplas)
+                Fotos de referência (opcional, mÃºltiplas)
                 <input type="file" multiple accept=".png,.jpg,.jpeg" {...register("fotos_referencia")} />
               </label>
             </div>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button className="btn btn--primary" type="submit">
-                Protocolar solicitaÃ§Ã£o
+                Protocolar solicitação
               </button>
               <button className="btn" type="button" onClick={() => navigate("/areas")}>
                 Voltar

@@ -1,4 +1,4 @@
-﻿// src/pages/ManagerVistoriaDetailPage.tsx
+// src/pages/ManagerVistoriaDetailPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import type { VistoriaStatus } from "../domain/vistoria";
 import { vistoriasService } from "../services/vistorias.service";
 
 function fmt(iso?: string) {
-  if (!iso) return "â€”";
+  if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleString("pt-BR");
@@ -38,11 +38,11 @@ function checklistValueLabel(v: string) {
   const s = String(v ?? "").toLowerCase();
   if (s === "ok") return "OK";
   if (s === "pendente") return "Pendente";
-  if (s === "nao_ok") return "NÃ£o OK";
+  if (s === "nao_ok") return "não OK";
   if (s === "baixo") return "Baixo";
-  if (s === "medio") return "MÃ©dio";
+  if (s === "medio") return "Médio";
   if (s === "alto") return "Alto";
-  return s || "â€”";
+  return s || "-";
 }
 
 function findStatusAt(v: any, toStatus: string) {
@@ -58,10 +58,10 @@ function findStatusAt(v: any, toStatus: string) {
 }
 
 function buildLaudoModelo(v: any, role: string) {
-  const protocolo = String(v?.codigo_protocolo ?? "â€”");
-  const area = String(v?.area_nome ?? "â€”");
-  const fase = String(v?.fase ?? "â€”");
-  const local = String(v?.local_texto ?? "â€”");
+  const protocolo = String(v?.codigo_protocolo ?? "-");
+  const area = String(v?.area_nome ?? "-");
+  const fase = String(v?.fase ?? "-");
+  const local = String(v?.local_texto ?? "-");
   const agendada = String(v?.agendada_para ?? "");
   const realizadaAt = findStatusAt(v, "realizada");
 
@@ -73,49 +73,49 @@ function buildLaudoModelo(v: any, role: string) {
   const risco = checklistValueLabel(c?.risco);
   const obsChecklist = String(c?.observacoes ?? "").trim();
 
-  // Modelo â€œinstitucionalâ€ + evidÃªncias + espaÃ§o de anÃ¡lise
-  return `PREFEITURA DE BETIM â€¢ EDUCAÃ‡ÃƒO AMBIENTAL
-PROGRAMA: ADOTE UMA ÃREA PÃšBLICA
+  // Modelo â€œinstitucionalâ€ + evidÃªncias + espaÃ§o de Análise
+  return `PREFEITURA DE BETIM - EDUCAÃ‡ÃƒO AMBIENTAL
+PROGRAMA: ADOTE UMA Área PÃšBLICA
 Base legal (Betim): Lei Municipal nÂº 6.180/2017 e Decreto nÂº 40.891/2017
-Contato: semmadbetim@betim.mg.gov.br â€¢ Telefone: (31) 3512-3032
+Contato: semmadbetim@betim.mg.gov.br - Telefone: (31) 3512-3032
 
-LAUDO TÃ‰CNICO (MVP) â€” VISTORIA / PRÃ‰-ADOÃ‡ÃƒO
+LAUDO TÃ‰CNICO (MVP) - VISTORIA / PRÃ‰-ADOÃ‡ÃƒO
 
 1) IdentificaÃ§Ã£o
-â€¢ Protocolo: ${protocolo}
-â€¢ Ãrea: ${area}
-â€¢ Fase/Tipo de vistoria: ${fase}
-â€¢ Local: ${local}
-â€¢ Agendada para: ${fmt(agendada)}
-â€¢ Realizada em: ${fmt(realizadaAt)}
-â€¢ ResponsÃ¡vel (SEMAD): ${role}
+- Protocolo: ${protocolo}
+- Área: ${area}
+- Fase/Tipo de vistoria: ${fase}
+- Local: ${local}
+- Agendada para: ${fmt(agendada)}
+- Realizada em: ${fmt(realizadaAt)}
+- ResponsÃ¡vel (SEMAD): ${role}
 
 2) Contexto do programa (resumo)
-O programa ADOTE UMA ÃREA PÃšBLICA promove cooperaÃ§Ã£o entre a Prefeitura de Betim e a sociedade para qualificar espaÃ§os pÃºblicos e Ã¡reas verdes, por meio de aÃ§Ãµes de manutenÃ§Ã£o, implantaÃ§Ã£o, reforma e melhoria urbana/paisagÃ­stica/ambiental, conforme regras municipais e termo firmado.
-A adoÃ§Ã£o nÃ£o concede uso exclusivo do espaÃ§o: regulamenta responsabilidades, contrapartidas e padrÃµes de execuÃ§Ã£o.
+O programa ADOTE UMA Área PÃšBLICA promove cooperaÃ§Ã£o entre a Prefeitura de Betim e a sociedade para qualificar espaÃ§os pÃºblicos e Áreas verdes, por meio de aÃ§Ãµes de manutenÃ§Ã£o, implantaÃ§Ã£o, reforma e melhoria urbana/paisagÃ­stica/ambiental, conforme regras municipais e termo firmado.
+A adoção não concede uso exclusivo do espaÃ§o: regulamenta responsabilidades, contrapartidas e padrÃµes de execuÃ§Ã£o.
 
 3) Escopo da vistoria
-Registrar condiÃ§Ãµes gerais e achados relevantes para subsidiar a anÃ¡lise tÃ©cnica do processo de adoÃ§Ã£o, incluindo riscos, conservaÃ§Ã£o e necessidades de adequaÃ§Ã£o.
+Registrar condiÃ§Ãµes gerais e achados relevantes para subsidiar a Análise técnica do processo de adoção, incluindo riscos, conservaÃ§Ã£o e necessidades de adequaÃ§Ã£o.
 
 4) Checklist (campos fixos)
-â€¢ Acesso: ${acesso}
-â€¢ IluminaÃ§Ã£o: ${iluminacao}
-â€¢ Limpeza: ${limpeza}
-â€¢ SinalizaÃ§Ã£o: ${sinalizacao}
-â€¢ Risco: ${risco}
+- Acesso: ${acesso}
+- IluminaÃ§Ã£o: ${iluminacao}
+- Limpeza: ${limpeza}
+- SinalizaÃ§Ã£o: ${sinalizacao}
+- Risco: ${risco}
 
 5) EvidÃªncias / observaÃ§Ãµes objetivas
 ${obsChecklist ? obsChecklist : "(Descreva aqui o que foi observado: conservaÃ§Ã£o, mobiliÃ¡rio urbano, vegetaÃ§Ã£o, acessibilidade, iluminaÃ§Ã£o, seguranÃ§a, entorno, etc.)"}
 
-6) AnÃ¡lise tÃ©cnica (ediÃ§Ã£o do gestor)
-(Complete com sua anÃ¡lise: conformidades, nÃ£o conformidades, pontos de atenÃ§Ã£o, impactos e justificativas.)
+6) Análise técnica (ediÃ§Ã£o do gestor)
+(Complete com sua Análise: conformidades, não conformidades, pontos de atenÃ§Ã£o, impactos e justificativas.)
 
 7) RecomendaÃ§Ãµes / condicionantes
 (Edite e detalhe recomendaÃ§Ãµes. Exemplos: adequaÃ§Ã£o de sinalizaÃ§Ã£o, manejo de vegetaÃ§Ã£o, ajustes no plano do adotante, cronograma, anexar fotos/metadados, condicionantes para deferimento.)
 
 8) ConclusÃ£o
 (Definir no campo â€œConclusÃ£oâ€ acima: FavorÃ¡vel / Com ressalvas / DesfavorÃ¡vel.)
-â€” Fim â€”
+- Fim -
 `;
 }
 
@@ -186,7 +186,7 @@ export function ManagerVistoriaDetailPage() {
     return (
       <div className="container">
         <div className="card pad">
-          <h2 style={{ marginTop: 0 }}>Vistoria nÃ£o encontrada</h2>
+          <h2 style={{ marginTop: 0 }}>Vistoria não encontrada</h2>
           <button type="button" className="btn" onClick={() => navigate("/gestor/vistorias")}>
             Voltar
           </button>
@@ -299,7 +299,7 @@ export function ManagerVistoriaDetailPage() {
           <div className="page__titlewrap">
             <h1 className="page__title">Detalhe da vistoria</h1>
             <p className="page__subtitle">
-              {v.codigo_protocolo ?? "â€”"} Â· {v.area_nome ?? "â€”"} Â· <strong>{STATUS_LABEL[v.status]}</strong>
+              {v.codigo_protocolo ?? "-"} : {v.area_nome ?? "-"} : <strong>{STATUS_LABEL[v.status]}</strong>
             </p>
           </div>
 
@@ -377,7 +377,7 @@ export function ManagerVistoriaDetailPage() {
           </div>
 
           <div className="muted" style={{ marginTop: 8 }}>
-            Regras: <code>agendada â†’ realizada â†’ laudo_emitido</code> (ou <code>agendada â†’ cancelada</code>)
+            Regras: <code>agendada  realizada  laudo_emitido</code> (ou <code>agendada  cancelada</code>)
           </div>
         </section>
 
@@ -392,7 +392,7 @@ export function ManagerVistoriaDetailPage() {
                   <select {...checklistForm.register(k)} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">NÃ£o OK</option>
+                    <option value="nao_ok">não OK</option>
                   </select>
                   {checklistForm.formState.errors[k] ? (
                     <div style={{ color: "crimson" }}>{String(checklistForm.formState.errors[k]?.message)}</div>
@@ -404,7 +404,7 @@ export function ManagerVistoriaDetailPage() {
                 risco
                 <select {...checklistForm.register("risco")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                   <option value="baixo">Baixo</option>
-                  <option value="medio">MÃ©dio</option>
+                  <option value="medio">Médio</option>
                   <option value="alto">Alto</option>
                 </select>
               </label>
@@ -518,7 +518,7 @@ export function ManagerVistoriaDetailPage() {
           )}
         </section>
 
-        {/* âœ… MODAL/TELA DO LAUDO (prÃ©-preenchida e editÃ¡vel) */}
+        {/* âœ… MODAL/TELA DO LAUDO (pré-preenchida e editÃ¡vel) */}
         {openLaudoEditor ? (
           <div
             role="dialog"
@@ -551,7 +551,7 @@ export function ManagerVistoriaDetailPage() {
                 <div>
                   <h3 style={{ marginTop: 0 }}>Editor do laudo</h3>
                   <p className="muted" style={{ marginTop: 6 }}>
-                    Modelo prÃ©-preenchido com dados da vistoria + conteÃºdo institucional do programa. Edite e depois{" "}
+                    Modelo pré-preenchido com dados da vistoria + conteÃºdo institucional do programa. Edite e depois{" "}
                     <strong>Salvar e emitir</strong>.
                   </p>
                 </div>
@@ -592,7 +592,7 @@ export function ManagerVistoriaDetailPage() {
               </div>
 
               <label style={{ fontWeight: 800, display: "block", marginTop: 12 }}>
-                Laudo (texto editÃ¡vel â€” serÃ¡ gravado em â€œRecomendaÃ§Ãµesâ€)
+                Laudo (texto editÃ¡vel - serÃ¡ gravado em â€œRecomendaÃ§Ãµesâ€)
                 <textarea
                   {...laudoForm.register("recomendacoes")}
                   rows={18}
@@ -632,9 +632,9 @@ export function ManagerVistoriaDetailPage() {
             <ul style={{ margin: "6px 0 0 18px" }}>
               {v.history.map((e) => (
                 <li key={e.id}>
-                  <strong>{fmt(e.at)}</strong> â€” <strong>{e.actor_role}</strong> â€” {e.type}
-                  {e.from_status || e.to_status ? ` (${e.from_status ?? "â€”"} â†’ ${e.to_status ?? "â€”"})` : ""}
-                  {e.note ? ` â€” ${e.note}` : ""}
+                  <strong>{fmt(e.at)}</strong> - <strong>{e.actor_role}</strong> - {e.type}
+                  {e.from_status || e.to_status ? ` (${e.from_status ?? "-"}  ${e.to_status ?? "-"})` : ""}
+                  {e.note ? ` - ${e.note}` : ""}
                 </li>
               ))}
             </ul>

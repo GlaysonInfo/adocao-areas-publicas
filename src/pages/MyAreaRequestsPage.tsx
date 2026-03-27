@@ -1,11 +1,11 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { areaRequestsService } from "../services/areaRequests.service";
 
 const LABEL: Record<string, string> = {
   solicitada: "Solicitada",
-  em_verificacao: "Em verificaÃ§Ã£o (SisGeo)",
+  em_verificacao: "Em verificação (SisGeo)",
   aprovada: "Aprovada",
   indeferida: "Indeferida",
 };
@@ -22,22 +22,22 @@ export function MyAreaRequestsPage() {
       <div className="page">
         <header className="page__header">
           <div className="page__titlewrap">
-            <h1 className="page__title">Minhas solicitaÃ§Ãµes de Ã¡rea</h1>
+            <h1 className="page__title">Minhas Solicitações de Área</h1>
             <p className="page__subtitle">Acompanhe aprovaÃ§Ãµes/indeferimentos e, quando aprovado, acesse a proposta gerada.</p>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link className="btn btn--primary" to="/solicitacoes-area/nova">
-              Nova solicitaÃ§Ã£o
+              Nova solicitação
             </Link>
             <Link className="btn" to="/propostas/nova">
-              Nova proposta (Ã¡rea jÃ¡ cadastrada)
+              Nova proposta (Área jÃ¡ cadastrada)
             </Link>
           </div>
         </header>
 
         {items.length === 0 ? (
-          <div className="card pad">Nenhuma solicitaÃ§Ã£o ainda.</div>
+          <div className="card pad">Nenhuma solicitação ainda.</div>
         ) : (
           <div className="grid" style={{ gap: 12 }}>
             {items.map((r) => (
@@ -63,7 +63,7 @@ export function MyAreaRequestsPage() {
                       Motivo:{" "}
                       {(() => {
                         const last = [...(r.history ?? [])].reverse().find((e) => e.type === "decision" && (e as any).decision === "rejected");
-                        return (last as any)?.decision_note ?? "â€”";
+                        return (last as any)?.decision_note ?? "-";
                       })()}
                     </div>
                   ) : null}

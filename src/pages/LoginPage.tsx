@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Role } from "../auth/AuthContext";
 import { isManagerRole, useAuth } from "../auth/AuthContext";

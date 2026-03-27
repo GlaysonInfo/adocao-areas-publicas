@@ -1,6 +1,7 @@
 ﻿import type { AreaPublica, AreaStatus, AreaArquivoMeta } from "../domain/area";
 import { isAreaStatus, normalizeLegacyAreaStatus } from "../domain/status";
 import { mock_areas } from "../mock/areas";
+import { sanitizeNullableText, sanitizeText } from "../lib/text-normalize";
 
 const KEY = "mvp_areas_v1";
 const SEEDED = "mvp_areas_seeded_v1";
@@ -69,14 +70,16 @@ function parseNumberBR(raw: unknown): number | null {
 
 function normalizeArea(raw: any, idx: number): AreaPublica {
   const id = String(raw?.id ?? safeUuid());
-  const codigo = String(
-    raw?.codigo ?? raw?.codigo_area ?? raw?.code ?? `AREA-${String(idx + 1).padStart(4, "0")}`
-  ).trim();
 
-  const nome = String(raw?.nome ?? raw?.area_nome ?? "—").trim();
-  const tipo = String(raw?.tipo ?? raw?.categoria ?? "—").trim();
-  const bairro = String(raw?.bairro ?? "—").trim();
-  const logradouro = String(raw?.logradouro ?? raw?.endereco ?? "—").trim();
+  const codigo = sanitizeText(
+    raw?.codigo ?? raw?.codigo_area ?? raw?.code ?? `AREA-${String(idx + 1).padStart(4, "0")}`,
+    `AREA-${String(idx + 1).padStart(4, "0")}`
+  );
+
+  const nome = sanitizeText(raw?.nome ?? raw?.area_nome, "—");
+  const tipo = sanitizeText(raw?.tipo ?? raw?.categoria, "—");
+  const bairro = sanitizeText(raw?.bairro, "—");
+  const logradouro = sanitizeText(raw?.logradouro ?? raw?.endereco, "—");
 
   const metragem_m2 =
     typeof raw?.metragem_m2 === "number"
@@ -90,7 +93,7 @@ function normalizeArea(raw: any, idx: number): AreaPublica {
     "disponivel";
 
   const ativo = typeof raw?.ativo === "boolean" ? raw.ativo : parseBool(raw?.ativo, true);
-  const restricoes = raw?.restricoes ? String(raw.restricoes) : undefined;
+  const restricoes = sanitizeNullableText(raw?.restricoes);
 
   const latitude_centro =
     raw?.latitude_centro != null ? parseNumberBR(raw.latitude_centro) ?? undefined : undefined;
@@ -176,7 +179,7 @@ export function getAreaById(id: string): AreaPublica | null {
 
 export function getAreaByCodigo(codigo: string): AreaPublica | null {
   const all = listAreas();
-  const c = String(codigo ?? "").trim();
+  const c = sanitizeText(codigo);
   return all.find((a) => a.codigo === c) ?? null;
 }
 
@@ -185,7 +188,16 @@ export function upsertArea(area: AreaPublica) {
   const idxById = all.findIndex((a) => a.id === area.id);
   const idxByCodigo = all.findIndex((a) => a.codigo === area.codigo);
 
-  const next = { ...area, updated_at: nowIso() };
+  const next: AreaPublica = {
+    ...area,
+    codigo: sanitizeText(area.codigo),
+    nome: sanitizeText(area.nome, "—"),
+    tipo: sanitizeText(area.tipo, "—"),
+    bairro: sanitizeText(area.bairro, "—"),
+    logradouro: sanitizeText(area.logradouro, "—"),
+    restricoes: sanitizeNullableText(area.restricoes),
+    updated_at: nowIso(),
+  };
 
   if (idxById >= 0) all[idxById] = next;
   else if (idxByCodigo >= 0) all[idxByCodigo] = { ...all[idxByCodigo], ...next };
@@ -197,6 +209,12 @@ export function upsertArea(area: AreaPublica) {
 export function createArea(input: Omit<AreaPublica, "id" | "created_at" | "updated_at">) {
   const area: AreaPublica = {
     ...input,
+    codigo: sanitizeText(input.codigo),
+    nome: sanitizeText(input.nome, "—"),
+    tipo: sanitizeText(input.tipo, "—"),
+    bairro: sanitizeText(input.bairro, "—"),
+    logradouro: sanitizeText(input.logradouro, "—"),
+    restricoes: sanitizeNullableText(input.restricoes),
     id: safeUuid(),
     created_at: nowIso(),
     updated_at: nowIso(),
@@ -302,8 +320,9 @@ export function importAreasFromCSV(csvText: string): ImportReport {
 
   const need = ["codigo", "nome", "tipo", "bairro", "logradouro", "metragem_m2", "status"];
   for (const h of need) {
-    if (!headers.includes(h))
+    if (!headers.includes(h)) {
       report.errors.push({ row: 0, message: `Cabeçalho obrigatório ausente: "${h}".` });
+    }
   }
   if (report.errors.length > 0) return report;
 
@@ -316,17 +335,17 @@ export function importAreasFromCSV(csvText: string): ImportReport {
     const rowNum = r + 2;
     const row = rows[r];
 
-    const codigo = String(row[idx("codigo")] ?? "").trim();
+    const codigo = sanitizeText(row[idx("codigo")] ?? "");
     if (!codigo) {
       report.skipped++;
       report.errors.push({ row: rowNum, message: "Linha sem 'codigo'." });
       continue;
     }
 
-    const nome = String(row[idx("nome")] ?? "").trim();
-    const tipo = String(row[idx("tipo")] ?? "").trim();
-    const bairro = String(row[idx("bairro")] ?? "").trim();
-    const logradouro = String(row[idx("logradouro")] ?? "").trim();
+    const nome = sanitizeText(row[idx("nome")] ?? "");
+    const tipo = sanitizeText(row[idx("tipo")] ?? "");
+    const bairro = sanitizeText(row[idx("bairro")] ?? "");
+    const logradouro = sanitizeText(row[idx("logradouro")] ?? "");
 
     const metr = parseNumberBR(row[idx("metragem_m2")] ?? "");
     if (metr == null || metr <= 0) {
@@ -342,11 +361,19 @@ export function importAreasFromCSV(csvText: string): ImportReport {
       continue;
     }
 
-    const restricoes = headers.includes("restricoes") ? String(row[idx("restricoes")] ?? "").trim() : "";
+    const restricoes = headers.includes("restricoes")
+      ? sanitizeText(row[idx("restricoes")] ?? "")
+      : "";
+
     const ativo = headers.includes("ativo") ? parseBool(row[idx("ativo")], true) : true;
 
-    const lat = headers.includes("latitude_centro") ? parseNumberBR(row[idx("latitude_centro")] ?? "") : null;
-    const lon = headers.includes("longitude_centro") ? parseNumberBR(row[idx("longitude_centro")] ?? "") : null;
+    const lat = headers.includes("latitude_centro")
+      ? parseNumberBR(row[idx("latitude_centro")] ?? "")
+      : null;
+
+    const lon = headers.includes("longitude_centro")
+      ? parseNumberBR(row[idx("longitude_centro")] ?? "")
+      : null;
 
     const existing = byCodigo.get(codigo);
 

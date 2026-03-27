@@ -1,10 +1,10 @@
-﻿// src/pages/reports/ReportsPage.tsx
+// src/pages/reports/ReportsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import type { KanbanColuna } from "../../domain/proposal";
 import { proposalsService } from "../../services";
 import { useAuth } from "../../auth/AuthContext";
 
-// âœ… SolicitaÃ§Ãµes de Ã¡rea
+// âœ… Solicitações de Área
 import { listAreaRequests, subscribeAreaRequests } from "../../storage/area_requests";
 
 // âœ… Vistorias
@@ -21,10 +21,10 @@ type TabKey =
 
 const COL_LABEL: Record<KanbanColuna, string> = {
   protocolo: "Protocolo",
-  analise_semad: "AnÃ¡lise SEMAD",
-  analise_ecos: "AnÃ¡lise ECOS",
+  analise_semad: "Análise SEMAD",
+  analise_ecos: "Análise ECOS",
   ajustes: "Ajustes",
-  decisao: "DecisÃ£o (Governo)",
+  decisao: "Decisão (Governo)",
   termo_assinado: "Termo Assinado",
   indeferida: "Indeferida",
 };
@@ -62,7 +62,7 @@ function safeDate(iso?: string) {
 
 function fmtBR(iso?: string) {
   const d = safeDate(iso);
-  if (!d) return "â€”";
+  if (!d) return "-";
   return d.toLocaleString("pt-BR");
 }
 
@@ -75,7 +75,7 @@ function inRange(atIso: string | undefined, fromD: Date | null, toD: Date | null
 }
 
 function formatDuration(ms: number | null | undefined) {
-  if (ms == null) return "â€”";
+  if (ms == null) return "-";
   const s = Math.max(0, Math.floor(ms / 1000));
   const mins = Math.floor(s / 60);
   const hrs = Math.floor(mins / 60);
@@ -111,7 +111,7 @@ function normEventType(h: any) {
   return String(h?.type ?? h?.action ?? h?.tipo ?? "").trim();
 }
 function normActor(h: any) {
-  return String(h?.actor_role ?? h?.actor ?? h?.autor ?? h?.role ?? "â€”").trim();
+  return String(h?.actor_role ?? h?.actor ?? h?.autor ?? h?.role ?? "-").trim();
 }
 function normAt(h: any) {
   return String(h?.at ?? h?.quando ?? h?.timestamp ?? "");
@@ -127,10 +127,10 @@ function normNote(h: any) {
 }
 
 function getAdopterContact(p: any) {
-  const nome = p?.adotante?.nome ?? p?.adotante_nome ?? p?.adotanteName ?? "â€”";
-  const email = p?.adotante?.email ?? p?.adotante_email ?? p?.adotanteEmail ?? "â€”";
-  const cel = p?.adotante?.celular ?? p?.adotante_celular ?? p?.celular ?? "â€”";
-  const wpp = p?.adotante?.whatsapp ?? p?.adotante_whatsapp ?? p?.whatsapp ?? "â€”";
+  const nome = p?.adotante?.nome ?? p?.adotante_nome ?? p?.adotanteName ?? "-";
+  const email = p?.adotante?.email ?? p?.adotante_email ?? p?.adotanteEmail ?? "-";
+  const cel = p?.adotante?.celular ?? p?.adotante_celular ?? p?.celular ?? "-";
+  const wpp = p?.adotante?.whatsapp ?? p?.adotante_whatsapp ?? p?.whatsapp ?? "-";
   return { nome, email, cel, wpp };
 }
 
@@ -230,13 +230,13 @@ function extractOverrideRows(proposals: any[], fromD: Date | null, toD: Date | n
       // - gate_from / gate_to (alternativo)
       // - from / to (fallback)
       const gate_from =
-        String(ev?.meta?.gate_from ?? ev?.gate_from ?? ev?.from ?? "").trim() || "â€”";
+        String(ev?.meta?.gate_from ?? ev?.gate_from ?? ev?.from ?? "").trim() || "-";
       const gate_to =
-        String(ev?.meta?.gate_to ?? ev?.gate_to ?? ev?.to ?? "").trim() || "â€”";
+        String(ev?.meta?.gate_to ?? ev?.gate_to ?? ev?.to ?? "").trim() || "-";
 
       rows.push({
         proposal_id: String(p?.id ?? ""),
-        codigo_protocolo: String(p?.codigo_protocolo ?? p?.codigo ?? "â€”"),
+        codigo_protocolo: String(p?.codigo_protocolo ?? p?.codigo ?? "-"),
         at,
         actor_role: normActor(ev),
         gate_from,
@@ -316,7 +316,7 @@ function computeSlaDetails(all: any[], fromD: Date | null, toD: Date | null) {
 }
 
 // ----------------------
-// Consolidado: SolicitaÃ§Ãµes de Ãrea (event-log)
+// Consolidado: Solicitações de Área (event-log)
 // ----------------------
 function normalizeDecisionValue(v: any) {
   const s = String(v ?? "").toLowerCase().trim();
@@ -572,7 +572,7 @@ export function ReportsPage() {
 
   const slaRows = useMemo(() => computeSlaDetails(proposals, fromD, toD), [proposals, fromD, toD]);
 
-  // ===== SolicitaÃ§Ãµes de Ã¡rea =====
+  // ===== Solicitações de Área =====
   const consolidatedReq = useMemo(
     () => computeAreaRequestsConsolidated(areaRequests, fromD, toD),
     [areaRequests, fromD, toD]
@@ -587,14 +587,14 @@ export function ReportsPage() {
   // ===== EXPORTS =====
   const exportConsolidado = () => {
     const headers = [
-      "PerÃ­odo (de)",
-      "PerÃ­odo (atÃ©)",
+      "período (de)",
+      "período (Até)",
 
       // Propostas
       "Protocolos criados",
-      "Entradas AnÃ¡lise SEMAD",
-      "Entradas AnÃ¡lise ECOS",
-      "Entradas DecisÃ£o (Governo)",
+      "Entradas Análise SEMAD",
+      "Entradas Análise ECOS",
+      "Entradas Decisão (Governo)",
       "Ajustes solicitados",
       "Termos assinados",
       "Indeferidas",
@@ -603,26 +603,26 @@ export function ReportsPage() {
       "Overrides sem vistoria (total)",
       "Overrides sem vistoria (SEMAD)",
 
-      // SolicitaÃ§Ãµes
-      "SolicitaÃ§Ãµes criadas",
-      "InÃ­cio verificaÃ§Ã£o (start_verification)",
-      "AtualizaÃ§Ãµes SisGeo (sisgeo_update)",
-      "DecisÃµes (solicitaÃ§Ã£o)",
-      "SolicitaÃ§Ãµes deferidas",
-      "SolicitaÃ§Ãµes indeferidas",
-      "Tempo mÃ©dio verificaÃ§Ã£o SisGeo (ms)",
-      "n_verificaÃ§Ã£o_sisgeo",
-      "Tempo mÃ©dio resposta solicitaÃ§Ã£o (ms)",
-      "n_resposta_solicitaÃ§Ã£o",
+      // Solicitações
+      "Solicitações criadas",
+      "Início verificação (start_verification)",
+      "Atualizações SisGeo (sisgeo_update)",
+      "Decisões (solicitação)",
+      "Solicitações deferidas",
+      "Solicitações indeferidas",
+      "Tempo médio verificação SisGeo (ms)",
+      "n_verificação_sisgeo",
+      "Tempo médio resposta solicitação (ms)",
+      "n_resposta_solicitação",
 
       // Vistorias
       "Vistorias criadas",
       "Status changes (vistorias)",
       "Laudos emitidos",
-      "Tempo mÃ©dio agendadaâ†’realizada (ms)",
-      "n_agendadaâ†’realizada",
-      "Tempo mÃ©dio realizadaâ†’laudo (ms)",
-      "n_realizadaâ†’laudo",
+      "Tempo médio agendadarealizada (ms)",
+      "n_agendadarealizada",
+      "Tempo médio realizadalaudo (ms)",
+      "n_realizadalaudo",
     ];
 
     const rows = [
@@ -670,7 +670,7 @@ export function ReportsPage() {
       "Evento",
       "Evento em",
       "Protocolo",
-      "Ãrea",
+      "Área",
       "Etapa atual",
       "Criado em",
       "Atualizado em",
@@ -678,7 +678,7 @@ export function ReportsPage() {
       "E-mail",
       "Celular",
       "WhatsApp",
-      "Ãšltimo motivo de ajustes (no perÃ­odo)",
+      "Ãšltimo motivo de ajustes (no período)",
     ];
 
     const rows = items.map((p) => {
@@ -689,8 +689,8 @@ export function ReportsPage() {
       return [
         eventName,
         fmtBR(getEventAt(p)),
-        p?.codigo_protocolo ?? p?.codigo ?? "â€”",
-        p?.area_nome ?? "â€”",
+        p?.codigo_protocolo ?? p?.codigo ?? "-",
+        p?.area_nome ?? "-",
         COL_LABEL[k] ?? String(k),
         fmtBR(p?.created_at ?? p?.createdAt),
         fmtBR(p?.updated_at ?? p?.updatedAt),
@@ -710,9 +710,9 @@ export function ReportsPage() {
       <div className="card pad">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ marginTop: 0 }}>RelatÃ³rios</h2>
+            <h2 style={{ marginTop: 0 }}>Relatórios</h2>
             <p style={{ marginTop: 6, opacity: 0.85 }}>
-              Perfil: <strong>{role}</strong> Â· PerÃ­odo baseado em <strong>eventos</strong> (localStorage) Â· SLA com censura.
+              Perfil: <strong>{role}</strong> : período baseado em <strong>eventos</strong> (localStorage) : SLA com censura.
             </p>
           </div>
 
@@ -743,7 +743,7 @@ export function ReportsPage() {
           </label>
 
           <label style={{ fontWeight: 800 }}>
-            AtÃ©
+            Até
             <input
               type="date"
               value={to}
@@ -766,7 +766,7 @@ export function ReportsPage() {
               Protocolos
             </button>
             <button type="button" className="btn" onClick={() => setTab("em_analise_outros")}>
-              Em outros Ã³rgÃ£os
+              Em outros Órgãos
             </button>
             <button type="button" className="btn" onClick={() => setTab("ajustes")}>
               Ajustes
@@ -789,22 +789,22 @@ export function ReportsPage() {
         {tab === "consolidado" ? (
           <div className="grid cols-2">
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>Consolidado â€” Propostas (Kanban)</h3>
+              <h3>Consolidado - Propostas (Kanban)</h3>
               <p style={{ marginTop: 6 }}>
-                PerÃ­odo: <strong>{from}</strong> a <strong>{to}</strong>
+                período: <strong>{from}</strong> a <strong>{to}</strong>
               </p>
 
               <p>
                 Protocolos criados: <strong>{consolidated.protocols_created}</strong>
               </p>
               <p>
-                Entradas em AnÃ¡lise SEMAD: <strong>{consolidated.entered_semad}</strong>
+                Entradas em Análise SEMAD: <strong>{consolidated.entered_semad}</strong>
               </p>
               <p>
-                Entradas em AnÃ¡lise ECOS: <strong>{consolidated.entered_ecos}</strong>
+                Entradas em Análise ECOS: <strong>{consolidated.entered_ecos}</strong>
               </p>
               <p>
-                Entradas em DecisÃ£o (Governo): <strong>{consolidated.entered_gov}</strong>
+                Entradas em Decisão (Governo): <strong>{consolidated.entered_gov}</strong>
               </p>
               <p>
                 Ajustes solicitados: <strong>{consolidated.adjustments_requested}</strong>
@@ -818,29 +818,29 @@ export function ReportsPage() {
 
               <hr className="hr" />
               <p>
-                Em outros Ã³rgÃ£os (ECOS + Governo):{" "}
+                Em outros Órgãos (ECOS + Governo):{" "}
                 <strong>{consolidated.entered_ecos + consolidated.entered_gov}</strong>
               </p>
             </div>
 
-            {/* âœ… MantÃ©m: SolicitaÃ§Ãµes de Ã¡rea */}
+            {/* âœ… Mantém: Solicitações de Área */}
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>Consolidado â€” SolicitaÃ§Ãµes de Ã¡rea</h3>
+              <h3>Consolidado - Solicitações de Área</h3>
               <p className="muted" style={{ marginTop: 6 }}>
                 Fonte: event-log (history/events) em localStorage
               </p>
 
               <p>
-                SolicitaÃ§Ãµes criadas: <strong>{consolidatedReq.created}</strong>
+                Solicitações criadas: <strong>{consolidatedReq.created}</strong>
               </p>
               <p>
-                InÃ­cio verificaÃ§Ã£o (start_verification): <strong>{consolidatedReq.start_verification}</strong>
+                Início verificação (start_verification): <strong>{consolidatedReq.start_verification}</strong>
               </p>
               <p>
-                AtualizaÃ§Ãµes SisGeo (sisgeo_update): <strong>{consolidatedReq.sisgeo_update}</strong>
+                Atualizações SisGeo (sisgeo_update): <strong>{consolidatedReq.sisgeo_update}</strong>
               </p>
               <p>
-                DecisÃµes (decision): <strong>{consolidatedReq.decisions}</strong>
+                Decisões (decision): <strong>{consolidatedReq.decisions}</strong>
               </p>
               <p>
                 Deferidas: <strong>{consolidatedReq.approved}</strong>
@@ -851,17 +851,17 @@ export function ReportsPage() {
 
               <hr className="hr" />
               <p>
-                Tempo mÃ©dio verificaÃ§Ã£o SisGeo: <strong>{formatDuration(consolidatedReq.avg_sisgeo_ms)}</strong>{" "}
+                Tempo médio verificação SisGeo: <strong>{formatDuration(consolidatedReq.avg_sisgeo_ms)}</strong>{" "}
                 <span className="muted">(n={consolidatedReq.n_sisgeo})</span>
               </p>
               <p>
-                Tempo mÃ©dio resposta solicitaÃ§Ã£o: <strong>{formatDuration(consolidatedReq.avg_response_ms)}</strong>{" "}
+                Tempo médio resposta solicitação: <strong>{formatDuration(consolidatedReq.avg_response_ms)}</strong>{" "}
                 <span className="muted">(n={consolidatedReq.n_response})</span>
               </p>
             </div>
 
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>Consolidado â€” Vistorias</h3>
+              <h3>Consolidado - Vistorias</h3>
               <p className="muted" style={{ marginTop: 6 }}>
                 Fonte: event-log (history/events) em localStorage
               </p>
@@ -878,11 +878,11 @@ export function ReportsPage() {
 
               <hr className="hr" />
               <p>
-                Tempo mÃ©dio agendada â†’ realizada: <strong>{formatDuration(consolidatedV.avg_agendada_realizada_ms)}</strong>{" "}
+                Tempo médio agendada  realizada: <strong>{formatDuration(consolidatedV.avg_agendada_realizada_ms)}</strong>{" "}
                 <span className="muted">(n={consolidatedV.n_agendada_realizada})</span>
               </p>
               <p>
-                Tempo mÃ©dio realizada â†’ laudo: <strong>{formatDuration(consolidatedV.avg_realizada_laudo_ms)}</strong>{" "}
+                Tempo médio realizada  laudo: <strong>{formatDuration(consolidatedV.avg_realizada_laudo_ms)}</strong>{" "}
                 <span className="muted">(n={consolidatedV.n_realizada_laudo})</span>
               </p>
             </div>
@@ -904,7 +904,7 @@ export function ReportsPage() {
               <hr className="hr" />
 
               {lastOverrides.length === 0 ? (
-                <div className="muted">Nenhum override no perÃ­odo.</div>
+                <div className="muted">Nenhum override no período.</div>
               ) : (
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -932,13 +932,13 @@ export function ReportsPage() {
                             {o.codigo_protocolo}
                           </td>
                           <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                            {o.gate_from} â†’ {o.gate_to}
+                            {o.gate_from}  {o.gate_to}
                           </td>
                           <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
                             {fmtBR(o.at)}
                           </td>
                           <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)", whiteSpace: "pre-wrap" }}>
-                            {o.note?.trim() ? o.note : "â€”"}
+                            {o.note?.trim() ? o.note : "-"}
                           </td>
                         </tr>
                       ))}
@@ -952,10 +952,10 @@ export function ReportsPage() {
               <h3>ObservaÃ§Ã£o</h3>
               <p style={{ marginTop: 6, opacity: 0.85 }}>
                 Se algum painel ficar zerado:
-                <br />â€¢ Kanban depende de <code>moveProposal(..., actor_role)</code>.
-                <br />â€¢ Overrides dependem de evento <code>override_no_vistoria</code> (e do motivo em <code>note</code>).
-                <br />â€¢ SolicitaÃ§Ãµes dependem de <code>start_verification</code>, <code>sisgeo_update</code>, <code>decision</code>.
-                <br />â€¢ Vistorias dependem de <code>create</code>, <code>status_change</code>, <code>emit_laudo</code>.
+                <br />- Kanban depende de <code>moveProposal(..., actor_role)</code>.
+                <br />- Overrides dependem de evento <code>override_no_vistoria</code> (e do motivo em <code>note</code>).
+                <br />- Solicitações dependem de <code>start_verification</code>, <code>sisgeo_update</code>, <code>decision</code>.
+                <br />- Vistorias dependem de <code>create</code>, <code>status_change</code>, <code>emit_laudo</code>.
               </p>
             </div>
           </div>
@@ -973,7 +973,7 @@ export function ReportsPage() {
                 alignItems: "center",
               }}
             >
-              <h3 style={{ margin: 0 }}>Protocolos criados no perÃ­odo</h3>
+              <h3 style={{ margin: 0 }}>Protocolos criados no período</h3>
               <button
                 type="button"
                 className="btn"
@@ -994,7 +994,7 @@ export function ReportsPage() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Protocolo", "Ãrea", "Criado em (evento)", "Contato (e-mail / celular / whatsapp)"].map((h) => (
+                    {["Protocolo", "Área", "Criado em (evento)", "Contato (e-mail / celular / whatsapp)"].map((h) => (
                       <th key={h} style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>
                         {h}
                       </th>
@@ -1011,7 +1011,7 @@ export function ReportsPage() {
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{p.area_nome}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{fmtBR(ev?.at)}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                          {c.email} Â· {c.cel} Â· {c.wpp}
+                          {c.email} : {c.cel} : {c.wpp}
                         </td>
                       </tr>
                     );
@@ -1019,7 +1019,7 @@ export function ReportsPage() {
                   {rowsProtocolos.length === 0 ? (
                     <tr>
                       <td colSpan={4} style={{ padding: 12, opacity: 0.75 }}>
-                        Sem itens no perÃ­odo.
+                        Sem itens no período.
                       </td>
                     </tr>
                   ) : null}
@@ -1041,7 +1041,7 @@ export function ReportsPage() {
                 alignItems: "center",
               }}
             >
-              <h3 style={{ margin: 0 }}>Entradas em outros Ã³rgÃ£os (ECOS + Governo) no perÃ­odo</h3>
+              <h3 style={{ margin: 0 }}>Entradas em outros Órgãos (ECOS + Governo) no período</h3>
               <button
                 type="button"
                 className="btn"
@@ -1049,7 +1049,7 @@ export function ReportsPage() {
                   exportList(
                     `relatorio_em_outros_orgaos_eventos_${from}_a_${to}.csv`,
                     rowsEmOutros,
-                    "move->(analise_ecos|decisao)",
+                    "move(analise_ecos|decisao)",
                     (p) => lastOtherOrgEntryInPeriod(p, fromD, toD)?.at ?? ""
                   )
                 }
@@ -1062,7 +1062,7 @@ export function ReportsPage() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Protocolo", "Ãrea", "Entrada em", "Evento em", "Contato"].map((h) => (
+                    {["Protocolo", "Área", "Entrada em", "Evento em", "Contato"].map((h) => (
                       <th key={h} style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>
                         {h}
                       </th>
@@ -1073,17 +1073,17 @@ export function ReportsPage() {
                   {rowsEmOutros.map((p: any) => {
                     const c = getAdopterContact(p);
                     const ev = lastOtherOrgEntryInPeriod(p, fromD, toD);
-                    const toCol = (ev?.to ?? "â€”") as KanbanColuna | "â€”";
+                    const toCol = (ev?.to ?? "-") as KanbanColuna | "-";
                     return (
                       <tr key={p.id}>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{p.codigo_protocolo}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{p.area_nome}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                          {toCol === "â€”" ? "â€”" : COL_LABEL[toCol]}
+                          {toCol === "-" ? "-" : COL_LABEL[toCol]}
                         </td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{fmtBR(ev?.at)}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                          {c.email} Â· {c.cel} Â· {c.wpp}
+                          {c.email} : {c.cel} : {c.wpp}
                         </td>
                       </tr>
                     );
@@ -1091,7 +1091,7 @@ export function ReportsPage() {
                   {rowsEmOutros.length === 0 ? (
                     <tr>
                       <td colSpan={5} style={{ padding: 12, opacity: 0.75 }}>
-                        Sem itens no perÃ­odo.
+                        Sem itens no período.
                       </td>
                     </tr>
                   ) : null}
@@ -1113,7 +1113,7 @@ export function ReportsPage() {
                 alignItems: "center",
               }}
             >
-              <h3 style={{ margin: 0 }}>Ajustes solicitados no perÃ­odo</h3>
+              <h3 style={{ margin: 0 }}>Ajustes solicitados no período</h3>
               <button
                 type="button"
                 className="btn"
@@ -1134,7 +1134,7 @@ export function ReportsPage() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Protocolo", "Ãrea", "Motivo (Ãºltimo no perÃ­odo)", "Solicitado por", "Evento em", "Contato"].map((h) => (
+                    {["Protocolo", "Área", "Motivo (Ãºltimo no período)", "Solicitado por", "Evento em", "Contato"].map((h) => (
                       <th key={h} style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>
                         {h}
                       </th>
@@ -1149,11 +1149,11 @@ export function ReportsPage() {
                       <tr key={p.id}>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{p.codigo_protocolo}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{p.area_nome}</td>
-                        <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{aj?.note ? aj.note : "â€”"}</td>
-                        <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{aj?.actor ?? "â€”"}</td>
+                        <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{aj?.note ? aj.note : "-"}</td>
+                        <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{aj?.actor ?? "-"}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{fmtBR(aj?.at)}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                          {c.email} Â· {c.cel} Â· {c.wpp}
+                          {c.email} : {c.cel} : {c.wpp}
                         </td>
                       </tr>
                     );
@@ -1161,7 +1161,7 @@ export function ReportsPage() {
                   {rowsAjustes.length === 0 ? (
                     <tr>
                       <td colSpan={6} style={{ padding: 12, opacity: 0.75 }}>
-                        Sem itens no perÃ­odo.
+                        Sem itens no período.
                       </td>
                     </tr>
                   ) : null}
@@ -1183,7 +1183,7 @@ export function ReportsPage() {
                 alignItems: "center",
               }}
             >
-              <h3 style={{ margin: 0 }}>Termos assinados no perÃ­odo</h3>
+              <h3 style={{ margin: 0 }}>Termos assinados no período</h3>
               <button
                 type="button"
                 className="btn"
@@ -1204,7 +1204,7 @@ export function ReportsPage() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Protocolo", "Ãrea", "Evento em", "Contato"].map((h) => (
+                    {["Protocolo", "Área", "Evento em", "Contato"].map((h) => (
                       <th key={h} style={{ textAlign: "left", padding: 10, borderBottom: "1px solid var(--border)" }}>
                         {h}
                       </th>
@@ -1221,7 +1221,7 @@ export function ReportsPage() {
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{p.area_nome}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{fmtBR(ev?.at)}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                          {c.email} Â· {c.cel} Â· {c.wpp}
+                          {c.email} : {c.cel} : {c.wpp}
                         </td>
                       </tr>
                     );
@@ -1229,7 +1229,7 @@ export function ReportsPage() {
                   {rowsTermos.length === 0 ? (
                     <tr>
                       <td colSpan={4} style={{ padding: 12, opacity: 0.75 }}>
-                        Sem itens no perÃ­odo.
+                        Sem itens no período.
                       </td>
                     </tr>
                   ) : null}
@@ -1243,10 +1243,10 @@ export function ReportsPage() {
         {tab === "produtividade" ? (
           <div className="grid cols-2">
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>Produtividade â€” SEMAD (por eventos)</h3>
+              <h3>Produtividade - SEMAD (por eventos)</h3>
 
               {!semadProd ? (
-                <p style={{ opacity: 0.75 }}>Selecione um perÃ­odo vÃ¡lido.</p>
+                <p style={{ opacity: 0.75 }}>Selecione um período vÃ¡lido.</p>
               ) : (
                 <>
                   <p style={{ marginTop: 6 }}>
@@ -1271,7 +1271,7 @@ export function ReportsPage() {
 
                   <h3 style={{ marginTop: 0 }}>TransiÃ§Ãµes mais frequentes</h3>
                   {semadProd.transitions.length === 0 ? (
-                    <p style={{ opacity: 0.75 }}>Sem movimentaÃ§Ãµes registradas no perÃ­odo.</p>
+                    <p style={{ opacity: 0.75 }}>Sem movimentaÃ§Ãµes registradas no período.</p>
                   ) : (
                     <ul style={{ margin: 0, paddingLeft: 18 }}>
                       {semadProd.transitions.map((t: any) => (
@@ -1286,11 +1286,11 @@ export function ReportsPage() {
             </div>
 
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
-              <h3>Nota tÃ©cnica</h3>
+              <h3>Nota técnica</h3>
               <p style={{ marginTop: 6, opacity: 0.85 }}>
                 Este painel usa somente evidÃªncia do <strong>event-log</strong>:
-                <br />â€¢ Kanban: <code>move</code> / <code>request_adjustments</code>
-                <br />â€¢ Override: <code>override_no_vistoria</code>
+                <br />- Kanban: <code>move</code> / <code>request_adjustments</code>
+                <br />- Override: <code>override_no_vistoria</code>
                 <br />
                 Se â€œOverrides sem vistoriaâ€ ficar zerado, verifique se o fluxo estÃ¡ persistindo o evento no{" "}
                 <code>history[]</code> antes do <code>move</code>.
@@ -1305,7 +1305,7 @@ export function ReportsPage() {
             <div className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
               <h3>SLA por etapa (tempo de permanÃªncia)</h3>
               <p style={{ marginTop: 6, opacity: 0.85 }}>
-                MÃ©tricas calculadas a partir do log de <strong>moves</strong>, com recorte no perÃ­odo e censura no fim do intervalo.
+                Métricas calculadas a partir do log de <strong>moves</strong>, com recorte no período e censura no fim do intervalo.
               </p>
 
               <div style={{ marginTop: 10, overflowX: "auto" }}>
@@ -1333,14 +1333,14 @@ export function ReportsPage() {
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{formatDuration(r.p80)}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>{formatDuration(r.p95)}</td>
                         <td style={{ padding: 10, borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                          {r.violationRate == null ? "â€”" : `${Math.round(r.violationRate * 100)}%`}
+                          {r.violationRate == null ? "-" : `${Math.round(r.violationRate * 100)}%`}
                         </td>
                       </tr>
                     ))}
                     {slaRows.length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ padding: 12, opacity: 0.75 }}>
-                          Selecione um perÃ­odo vÃ¡lido.
+                          Selecione um período vÃ¡lido.
                         </td>
                       </tr>
                     ) : null}
@@ -1350,7 +1350,7 @@ export function ReportsPage() {
 
               <p style={{ marginTop: 12, opacity: 0.85 }}>
                 Para um SLA â€œoficialâ€, as metas devem ser definidas por norma interna (dias Ãºteis vs corridos) e a violaÃ§Ã£o pode ser separada em:
-                (i) segmentos encerrados no perÃ­odo; (ii) itens censurados (ainda abertos).
+                (i) segmentos encerrados no período; (ii) itens censurados (ainda abertos).
               </p>
             </div>
           </div>

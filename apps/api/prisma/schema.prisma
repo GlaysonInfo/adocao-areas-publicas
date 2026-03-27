@@ -47,7 +47,7 @@ model Area {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  // 1 Area -> N Proposals
+  // 1 Area  N Proposals
   proposals Proposal[] @relation("AreaProposals")
 
   @@map("areas")
@@ -99,7 +99,7 @@ model Proposal {
   events     ProposalEvent[]
   documentos ProposalDocumento[]
 
-  // 1 Proposal -> N Vistorias
+  // 1 Proposal  N Vistorias
   vistorias Vistoria[]
 
   @@index([area_id])

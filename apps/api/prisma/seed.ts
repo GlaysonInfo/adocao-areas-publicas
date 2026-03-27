@@ -91,7 +91,7 @@ function pickCsvPath(): string {
   if (env) return path.resolve(process.cwd(), env);
 
   // seed roda a partir de apps/api normalmente
-  const base = path.resolve(hereDir(), ".."); // apps/api/prisma -> apps/api
+  const base = path.resolve(hereDir(), ".."); // apps/api/prisma  apps/api
 
   const candidates = [
     path.resolve(base, "../../data/import/areas_betim_20_simuladas.csv"),

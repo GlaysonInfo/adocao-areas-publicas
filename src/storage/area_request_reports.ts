@@ -57,7 +57,7 @@ function isSemadRole(role: string) {
 }
 
 /**
- * MÃ©tricas de SolicitaÃ§Ãµes de Ãrea (fora do Kanban).
+ * Métricas de Solicitações de Área (fora do Kanban).
  * EvidÃªncia: events em mvp_area_requests_v1[].history
  */
 export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
@@ -79,7 +79,7 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
     };
   }
 
-  // eventos no perÃ­odo
+  // eventos no período
   const evs = listRequestEventRowsBetween(fromIso, toIso);
 
   const qtd_solicitacoes_criadas = evs.filter((e) => e.type === "create").length;
@@ -90,7 +90,7 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
   const qtd_solicitacoes_deferidas = decisions.filter((e) => e.decision === "approved").length;
   const qtd_solicitacoes_indeferidas = decisions.filter((e) => e.decision === "rejected").length;
 
-  // tempos (por solicitaÃ§Ã£o decidida)
+  // tempos (por solicitação decidida)
   const dur_verificacao: number[] = [];
   const dur_resposta: number[] = [];
 
@@ -104,13 +104,13 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
     const decAt = toMs(dec.at);
     if (!Number.isFinite(decAt)) continue;
 
-    // considerar somente decisÃµes dentro do perÃ­odo
+    // considerar somente Decisões dentro do período
     if (decAt < startMs || decAt > endMs) continue;
 
-    // resposta = decisÃ£o - criaÃ§Ã£o
+    // resposta = Decisão - criaÃ§Ã£o
     dur_resposta.push(decAt - created);
 
-    // verificaÃ§Ã£o SisGeo = decisÃ£o - start_verification (fallback: created_at)
+    // verificação SisGeo = Decisão - start_verification (fallback: created_at)
     const startVer = firstEventAt(r, "start_verification");
     const base = startVer ? toMs(startVer) : created;
     if (Number.isFinite(base)) dur_verificacao.push(decAt - base);
@@ -132,7 +132,7 @@ export function computeAreaRequestMetrics(fromIso: string, toIso: string) {
 }
 
 /**
- * Produtividade SEMAD (SolicitaÃ§Ãµes): aÃ§Ãµes do role gestor_semad no event-log.
+ * Produtividade SEMAD (Solicitações): aÃ§Ãµes do role gestor_semad no event-log.
  * EvidÃªncia: history[].actor_role === "gestor_semad"
  */
 export function computeSemadProductivityAreaRequests(fromIso: string, toIso: string) {
@@ -153,16 +153,16 @@ export function computeSemadProductivityAreaRequests(fromIso: string, toIso: str
   for (const e of semadEvents) touched.add((e as any).request_id);
 
   // transiÃ§Ãµes simples (estado lÃ³gico)
-  // start_verification: solicitadaâ†’em_verificacao
-  // decision: em_verificacaoâ†’aprovada/indeferida (ou solicitadaâ†’...)
+  // start_verification: solicitadaem_verificacao
+  // decision: em_verificacaoaprovada/indeferida (ou solicitada...)
   const transCount = new Map<string, number>();
   for (const e of semadEvents) {
     if (e.type === "start_verification") {
-      transCount.set("solicitadaâ†’em_verificacao", (transCount.get("solicitadaâ†’em_verificacao") ?? 0) + 1);
+      transCount.set("solicitadaem_verificacao", (transCount.get("solicitadaem_verificacao") ?? 0) + 1);
     }
     if (e.type === "decision") {
       const d = (e as any).decision;
-      const key = d === "approved" ? "em_verificacaoâ†’aprovada" : "em_verificacaoâ†’indeferida";
+      const key = d === "approved" ? "em_verificacaoaprovada" : "em_verificacaoindeferida";
       transCount.set(key, (transCount.get(key) ?? 0) + 1);
     }
   }

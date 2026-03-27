@@ -1,9 +1,10 @@
-﻿// src/pages/AreasPage.tsx
+// src/pages/AreasPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { AreaPublica } from "../domain/area";
 import { useAuth } from "../auth/AuthContext";
 import { areasService } from "../services";
+import { displayText } from "../lib/text";
 
 type AreaStatus = AreaPublica["status"];
 
@@ -12,15 +13,15 @@ function isAdopterRole(role: string | null) {
 }
 
 function statusLabel(s: AreaStatus) {
-  if (s === "disponivel") return "DisponÃ­vel";
-  if (s === "em_adocao") return "Em adoÃ§Ã£o";
+  if (s === "disponivel") return "Disponível";
+  if (s === "em_adocao") return "Em adoção";
   if (s === "adotada") return "Adotada";
   return String(s);
 }
 
 function statusBadge(s: AreaStatus) {
-  if (s === "disponivel") return { text: "DisponÃ­vel", cls: "badge badge--success" };
-  if (s === "em_adocao") return { text: "Em adoÃ§Ã£o", cls: "badge badge--warning" };
+  if (s === "disponivel") return { text: "Disponível", cls: "badge badge--success" };
+  if (s === "em_adocao") return { text: "Em adoção", cls: "badge badge--warning" };
   if (s === "adotada") return { text: "Adotada", cls: "badge badge--neutral" };
   return { text: String(s), cls: "badge badge--neutral" };
 }
@@ -31,7 +32,7 @@ export function AreasPage() {
 
   const [searchParams] = useSearchParams();
 
-  // fonte Ãºnica de verdade: storage (inclui Ã¡reas criadas pelo admin)
+  // fonte Ãºnica de verdade: storage (inclui Áreas criadas pelo admin)
   const [areas, setAreas] = useState<AreaPublica[]>(() => areasService.listPublic());
 
   // recarrega ao entrar na pÃ¡gina (ou quando mudar querystring)
@@ -46,13 +47,13 @@ export function AreasPage() {
 
   const tipos = useMemo(() => {
     const set = new Set<string>();
-    for (const a of areas) set.add(String(a.tipo || "â€”"));
+    for (const a of areas) set.add(String(a.tipo || "-"));
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [areas]);
 
   const bairros = useMemo(() => {
     const set = new Set<string>();
-    for (const a of areas) set.add(String(a.bairro || "â€”"));
+    for (const a of areas) set.add(String(a.bairro || "-"));
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [areas]);
 
@@ -70,9 +71,9 @@ export function AreasPage() {
       <div className="page">
         <header className="page__header">
           <div className="page__titlewrap">
-            <h1 className="page__title">Ãreas</h1>
+            <h1 className="page__title">Áreas</h1>
             <p className="page__subtitle">
-              Consulta de Ã¡reas pÃºblicas e Ã¡reas verdes (lista sem SIG). Use os filtros para localizar a Ã¡rea desejada.
+              Consulta de Áreas públicas e Áreas verdes (lista sem SIG). Use os filtros para localizar a Área desejada.
             </p>
           </div>
 
@@ -115,8 +116,8 @@ export function AreasPage() {
               <label htmlFor="f_status">Status</label>
               <select id="f_status" className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="todos">Todos</option>
-                <option value="disponivel">DisponÃ­vel</option>
-                <option value="em_adocao">Em adoÃ§Ã£o</option>
+                <option value="disponivel">Disponível</option>
+                <option value="em_adocao">Em adoção</option>
                 <option value="adotada">Adotada</option>
               </select>
             </div>
@@ -145,15 +146,15 @@ export function AreasPage() {
 
           {!canStart ? (
             <p className="muted" style={{ marginTop: 12 }}>
-              VocÃª estÃ¡ com perfil de gestor/administrador. A criaÃ§Ã£o de proposta Ã© feita por perfis de adotante.
+              Você está com perfil de gestor/administrador. A criação de proposta é feita por perfis de adotante.
             </p>
           ) : null}
         </section>
 
-        <section aria-label="Lista de Ã¡reas" style={{ marginTop: 14 }}>
+        <section aria-label="Lista de Áreas" style={{ marginTop: 14 }}>
           {filtradas.length === 0 ? (
             <div className="card pad">
-              <h3>Nenhuma Ã¡rea encontrada</h3>
+              <h3>Nenhuma Área encontrada</h3>
               <p>Tente ajustar os filtros.</p>
             </div>
           ) : (
@@ -167,30 +168,30 @@ export function AreasPage() {
                     <div className="item__head">
                       <div style={{ minWidth: 0 }}>
                         <h3 className="item__title" style={{ marginBottom: 6 }}>
-                          {a.nome}
+                          {displayText(a.nome)}
                         </h3>
 
                         {/* Meta em linhas separadas (evita â€œgrudarâ€) */}
                         <div className="item__meta">
                           <strong>Tipo:</strong> {String(a.tipo)}{" "}
-                          <span aria-hidden="true">Â·</span>{" "}
+                          <span aria-hidden="true">:</span>{" "}
                           <strong>Status:</strong> {statusLabel(a.status as AreaStatus)}
                         </div>
 
                         <div className="item__meta">
-                          <strong>Bairro:</strong> {a.bairro} <span aria-hidden="true">Â·</span>{" "}
-                          <strong>Metragem:</strong> {a.metragem_m2} mÂ²
+                          <strong>Bairro:</strong> {displayText(a.bairro)} <span aria-hidden="true">:</span>{" "}
+                          <strong>Metragem:</strong> {a.metragem_m2} m²
                         </div>
 
                         {a.logradouro ? (
                           <div className="item__meta">
-                            <strong>Logradouro:</strong> {a.logradouro}
+                            <strong>Logradouro:</strong> {displayText(a.logradouro)}
                           </div>
                         ) : null}
                       </div>
 
                       {/* Badges com espaÃ§amento */}
-                      <div className="badges" aria-label="Etiquetas da Ã¡rea" style={{ display: "flex", gap: 8 }}>
+                      <div className="badges" aria-label="Etiquetas da Área" style={{ display: "flex", gap: 8 }}>
                         <span className={badge.cls}>{badge.text}</span>
                         <span className="badge badge--neutral">{String(a.tipo)}</span>
                       </div>
@@ -199,12 +200,12 @@ export function AreasPage() {
                     {a.restricoes ? (
                       <div style={{ marginTop: 10 }}>
                         <p style={{ margin: 0 }}>
-                          <strong>RestriÃ§Ãµes:</strong> {a.restricoes}
+                          <strong>Restrições:</strong> {displayText(a.restricoes)}
                         </p>
                       </div>
                     ) : null}
 
-                    {/* RodapÃ© do card (CTA nÃ£o sobrepÃµe texto) */}
+                    {/* Rodapé do card (CTA não sobrepÃµe texto) */}
                     <div
                       className="item__actions"
                       style={{
@@ -218,13 +219,13 @@ export function AreasPage() {
                       {isDisponivel ? (
                         canStart ? (
                           <Link className="btn btn--primary" to={`/propostas/nova?area_id=${encodeURIComponent(a.id)}`}>
-                            Iniciar proposta para esta Ã¡rea
+                            Iniciar proposta para esta Área
                           </Link>
                         ) : (
-                          <span className="muted">FaÃ§a login como adotante para iniciar proposta.</span>
+                          <span className="muted">Faça login como adotante para iniciar proposta.</span>
                         )
                       ) : (
-                        <span className="muted">Ãrea nÃ£o disponÃ­vel para iniciar proposta.</span>
+                        <span className="muted">Área não Disponível para iniciar proposta.</span>
                       )}
                     </div>
                   </article>
@@ -237,6 +238,9 @@ export function AreasPage() {
     </div>
   );
 }
+
+
+
 
 
 

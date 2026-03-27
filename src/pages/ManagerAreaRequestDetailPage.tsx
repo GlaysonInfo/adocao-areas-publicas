@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
@@ -7,16 +7,16 @@ import type { SisGeoResultado } from "../domain/area_request";
 
 const LABEL: Record<string, string> = {
   solicitada: "Solicitada",
-  em_verificacao: "Em verificaÃ§Ã£o",
+  em_verificacao: "Em verificação",
   aprovada: "Aprovada",
   indeferida: "Indeferida",
 };
 
 const SISGEO_OPTIONS: { value: SisGeoResultado; label: string }[] = [
-  { value: "publica_disponivel", label: "PÃºblica e disponÃ­vel" },
-  { value: "publica_indisponivel", label: "PÃºblica e indisponÃ­vel" },
-  { value: "nao_publica", label: "NÃ£o Ã© pÃºblica" },
-  { value: "nao_encontrada", label: "NÃ£o encontrada no SisGeo" },
+  { value: "publica_disponivel", label: "pública e Disponível" },
+  { value: "publica_indisponivel", label: "pública e inDisponível" },
+  { value: "nao_publica", label: "não é pública" },
+  { value: "nao_encontrada", label: "não encontrada no SisGeo" },
   { value: "uso_incompativel", label: "Uso pretendido incompatÃ­vel" },
 ];
 
@@ -43,9 +43,9 @@ export function ManagerAreaRequestDetailPage() {
 
   const [area_codigo, setAreaCodigo] = useState("");
   const [area_nome, setAreaNome] = useState("");
-  const [area_tipo, setAreaTipo] = useState("â€”");
-  const [area_bairro, setAreaBairro] = useState("â€”");
-  const [area_logradouro, setAreaLogradouro] = useState("â€”");
+  const [area_tipo, setAreaTipo] = useState("-");
+  const [area_bairro, setAreaBairro] = useState("-");
+  const [area_logradouro, setAreaLogradouro] = useState("-");
   const [area_metragem, setAreaMetragem] = useState<number>(0);
 
   useEffect(() => {
@@ -65,10 +65,10 @@ export function ManagerAreaRequestDetailPage() {
     } else {
       const fallbackCode = `AREA-${String(r.codigo_protocolo ?? "").replaceAll("-", "")}`;
       setAreaCodigo(fallbackCode.slice(0, 24));
-      setAreaNome(`Ãrea solicitada (${r.codigo_protocolo})`);
-      setAreaTipo("â€”");
-      setAreaBairro("â€”");
-      setAreaLogradouro("â€”");
+      setAreaNome(`Área solicitada (${r.codigo_protocolo})`);
+      setAreaTipo("-");
+      setAreaBairro("-");
+      setAreaLogradouro("-");
       setAreaMetragem(0);
     }
   }, [r?.id]);
@@ -87,7 +87,7 @@ export function ManagerAreaRequestDetailPage() {
     return (
       <div className="container">
         <div className="page">
-          <div className="card pad">SolicitaÃ§Ã£o nÃ£o encontrada.</div>
+          <div className="card pad">solicitação não encontrada.</div>
         </div>
       </div>
     );
@@ -115,7 +115,7 @@ export function ManagerAreaRequestDetailPage() {
         logradouro: area_logradouro.trim(),
         metragem_m2: num(area_metragem),
       });
-      alert("Cadastro da Ã¡rea (rascunho) salvo.");
+      alert("Cadastro da Área (rascunho) salvo.");
     } catch (e: any) {
       alert(e?.message ?? "Erro ao salvar rascunho.");
     }
@@ -125,7 +125,7 @@ export function ManagerAreaRequestDetailPage() {
     try {
       areaRequestsService.startVerification(r.id, actor_role);
     } catch (e: any) {
-      alert(e?.message ?? "Erro ao iniciar verificaÃ§Ã£o.");
+      alert(e?.message ?? "Erro ao iniciar verificação.");
     }
   };
 
@@ -149,7 +149,7 @@ export function ManagerAreaRequestDetailPage() {
         r.id,
         {
           decision: "approved",
-          decision_note: "Aprovada apÃ³s verificaÃ§Ã£o SisGeo.",
+          decision_note: "Aprovada apÃ³s verificação SisGeo.",
           area_draft: {
             codigo: area_codigo.trim(),
             nome: area_nome.trim(),
@@ -177,7 +177,7 @@ export function ManagerAreaRequestDetailPage() {
       <div className="page">
         <header className="page__header">
           <div className="page__titlewrap">
-            <h1 className="page__title">SolicitaÃ§Ã£o {r.codigo_protocolo}</h1>
+            <h1 className="page__title">solicitação {r.codigo_protocolo}</h1>
             <p className="page__subtitle">{LABEL[r.status] ?? r.status}</p>
           </div>
 
@@ -192,9 +192,9 @@ export function ManagerAreaRequestDetailPage() {
         </header>
 
         <div className="card pad" style={{ display: "grid", gap: 12 }}>
-          <div><strong>LocalizaÃ§Ã£o:</strong> <span className="muted">{r.localizacao_descritiva}</span></div>
+          <div><strong>Localização:</strong> <span className="muted">{r.localizacao_descritiva}</span></div>
           {r.geo ? (
-            <div className="muted">Coordenadas: lat={r.geo.lat} lng={r.geo.lng} (â‰ˆ{r.geo.accuracy_m ?? "â€”"}m) em {r.geo.captured_at}</div>
+            <div className="muted">Coordenadas: lat={r.geo.lat} lng={r.geo.lng} (â‰ˆ{r.geo.accuracy_m ?? "-"}m) em {r.geo.captured_at}</div>
           ) : (
             <div className="muted">Sem coordenadas.</div>
           )}
@@ -206,7 +206,7 @@ export function ManagerAreaRequestDetailPage() {
           {!is_closed && r.status === "solicitada" ? (
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button className="btn btn--subtle" type="button" onClick={doStartVerification}>
-                Iniciar verificaÃ§Ã£o
+                Iniciar verificação
               </button>
             </div>
           ) : null}
@@ -214,7 +214,7 @@ export function ManagerAreaRequestDetailPage() {
 
         <div className="grid" style={{ gap: 12, marginTop: 12 }}>
           <div className="card pad" style={{ display: "grid", gap: 10 }}>
-            <h2 className="h2">VerificaÃ§Ã£o SisGeo</h2>
+            <h2 className="h2">verificação SisGeo</h2>
 
             <label>
               Resultado
@@ -226,7 +226,7 @@ export function ManagerAreaRequestDetailPage() {
             </label>
 
             <label>
-              ReferÃªncia SisGeo (opcional)
+              referência SisGeo (opcional)
               <input className="input" value={sisgeo_ref} onChange={(e) => setSisgeoRef(e.target.value)} disabled={is_closed} />
             </label>
 
@@ -243,9 +243,9 @@ export function ManagerAreaRequestDetailPage() {
           </div>
 
           <div className="card pad" style={{ display: "grid", gap: 10 }}>
-            <h2 className="h2">Cadastro da Ã¡rea (para aprovaÃ§Ã£o)</h2>
+            <h2 className="h2">Cadastro da Área (para aprovaÃ§Ã£o)</h2>
 
-            <label>CÃ³digo da Ã¡rea
+            <label>CÃ³digo da Área
               <input className="input" value={area_codigo} onChange={(e) => setAreaCodigo(e.target.value)} disabled={is_closed} />
             </label>
             <label>Nome
@@ -260,7 +260,7 @@ export function ManagerAreaRequestDetailPage() {
             <label>Logradouro
               <input className="input" value={area_logradouro} onChange={(e) => setAreaLogradouro(e.target.value)} disabled={is_closed} />
             </label>
-            <label>Metragem (mÂ²)
+            <label>Metragem (m²)
               <input className="input" inputMode="decimal" value={String(area_metragem)} onChange={(e) => setAreaMetragem(num(e.target.value))} disabled={is_closed} />
             </label>
 
@@ -270,7 +270,7 @@ export function ManagerAreaRequestDetailPage() {
               </button>
 
               <button className="btn btn--primary" type="button" onClick={doApprove} disabled={is_closed}>
-                Aprovar (cadastra Ã¡rea + gera proposta)
+                Aprovar (cadastra Área + gera proposta)
               </button>
 
               <button className="btn" type="button" onClick={doReject} disabled={is_closed}>
@@ -286,8 +286,8 @@ export function ManagerAreaRequestDetailPage() {
             <ul className="list">
               {r.history.map((e) => (
                 <li key={e.id}>
-                  <strong>{e.at}</strong> â€” <strong>{e.actor_role}</strong> â€” {e.type}
-                  {"decision" in e ? ((e as any).decision_note ? ` â€” ${(e as any).decision_note}` : "") : ""}
+                  <strong>{e.at}</strong> - <strong>{e.actor_role}</strong> - {e.type}
+                  {"decision" in e ? ((e as any).decision_note ? ` - ${(e as any).decision_note}` : "") : ""}
                 </li>
               ))}
             </ul>

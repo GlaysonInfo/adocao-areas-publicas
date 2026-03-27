@@ -101,7 +101,7 @@ B) Prisma generate EPERM (Windows file lock)
 
 Sintoma:
 
-EPERM: operation not permitted, rename ... query_engine-windows.dll.node.tmp -> ...
+EPERM: operation not permitted, rename ... query_engine-windows.dll.node.tmp  ...
 
 Correção:
 

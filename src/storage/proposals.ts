@@ -1,4 +1,4 @@
-﻿// src/storage/proposals.ts
+// src/storage/proposals.ts
 import type {
   KanbanColuna,
   PropostaAdocao,
@@ -10,6 +10,7 @@ import type {
 import { canTransitionProposal, requiresNoteForProposalTransition } from "../domain/transitions";
 import { isProposalClosed, runDomainInvariantChecks } from "../domain/invariants";
 import { isProposalKanbanColuna, normalizeLegacyProposalStatus } from "../domain/status";
+import type { AreaPublica, AreaStatus } from "../domain/area";
 import { getAreaById, listAreas, setAreaStatus } from "./areas";
 
 const KEY = "mvp_proposals_v1";
@@ -21,7 +22,9 @@ function emit() {
   for (const fn of listeners) {
     try {
       fn();
-    } catch {}
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -162,10 +165,31 @@ function normalizeProposal(raw: any): PropostaAdocao {
   };
 }
 
-function assertDomainInvariants(items: PropostaAdocao[]) {
+function withProjectedAreaStatus(areas: AreaPublica[], areaId: string, status: AreaStatus): AreaPublica[] {
+  return areas.map((a) =>
+    a.id === areaId
+      ? {
+          ...a,
+          status,
+          updated_at: nowIso(),
+        }
+      : a
+  );
+}
+
+function assertDomainInvariantsWithContext(input: {
+  proposals: PropostaAdocao[];
+  projectedAreaStatus?: { areaId: string; status: AreaStatus };
+}) {
+  let areas = listAreas();
+
+  if (input.projectedAreaStatus) {
+    areas = withProjectedAreaStatus(areas, input.projectedAreaStatus.areaId, input.projectedAreaStatus.status);
+  }
+
   const checks = runDomainInvariantChecks({
-    areas: listAreas(),
-    proposals: items,
+    areas,
+    proposals: input.proposals,
   });
 
   const firstError = checks.find((c) => !c.ok);
@@ -264,10 +288,15 @@ export function createProposal(input: PropostaAdocao, actor_role: string) {
 
   const all = listProposals();
   all.unshift(base);
-  assertDomainInvariants(all);
-  writeAll(all);
 
+  assertDomainInvariantsWithContext({
+    proposals: all,
+    projectedAreaStatus: { areaId: base.area_id, status: "em_adocao" },
+  });
+
+  writeAll(all);
   setAreaStatus(base.area_id, "em_adocao");
+
   return base;
 }
 
@@ -326,6 +355,12 @@ function hasOverrideForGate(p: PropostaAdocao, from: KanbanColuna, to: KanbanCol
     const gt = (e?.meta?.gate_to ?? e?.gate_to ?? e?.to) as any;
     return String(gf) === String(from) && String(gt) === String(to);
   });
+}
+
+function projectedAreaStatusAfterMove(to: KanbanColuna): AreaStatus | null {
+  if (to === "termo_assinado") return "adotada";
+  if (to === "indeferida") return "disponivel";
+  return null;
 }
 
 export function moveProposal(
@@ -392,7 +427,7 @@ export function moveProposal(
     });
   }
 
-  let tMove = ensureMoveAfterExtras(nowIso(), extra);
+  const tMove = ensureMoveAfterExtras(nowIso(), extra);
 
   let next: PropostaAdocao = { ...current, kanban_coluna: to, updated_at: tMove };
 
@@ -473,7 +508,13 @@ export function moveProposal(
   }
 
   all[idx] = next;
-  assertDomainInvariants(all);
+
+  const projectedStatus = projectedAreaStatusAfterMove(to);
+  assertDomainInvariantsWithContext({
+    proposals: all,
+    projectedAreaStatus: projectedStatus ? { areaId: next.area_id, status: projectedStatus } : undefined,
+  });
+
   writeAll(all);
 
   if (to === "termo_assinado") setAreaStatus(next.area_id, "adotada");
@@ -546,7 +587,12 @@ export function adopterUpdateAndResubmitFromAdjustments(
   );
 
   all[idx] = next;
-  assertDomainInvariants(all);
+
+  assertDomainInvariantsWithContext({
+    proposals: all,
+    projectedAreaStatus: { areaId: next.area_id, status: "em_adocao" },
+  });
+
   writeAll(all);
 
   return next;

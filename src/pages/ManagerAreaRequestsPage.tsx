@@ -1,11 +1,11 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { areaRequestsService } from "../services/areaRequests.service";
 
 const LABEL: Record<string, string> = {
   solicitada: "Solicitada",
-  em_verificacao: "Em verificaÃ§Ã£o",
+  em_verificacao: "Em verificação",
   aprovada: "Aprovada",
   indeferida: "Indeferida",
 };
@@ -34,8 +34,8 @@ export function ManagerAreaRequestsPage() {
       <div className="page">
         <header className="page__header">
           <div className="page__titlewrap">
-            <h1 className="page__title">SolicitaÃ§Ãµes de Ã¡reas nÃ£o cadastradas</h1>
-            <p className="page__subtitle">VerificaÃ§Ã£o SisGeo â†’ AprovaÃ§Ã£o (cadastra Ã¡rea + gera proposta) ou Indeferimento.</p>
+            <h1 className="page__title">Solicitações de Áreas não cadastradas</h1>
+            <p className="page__subtitle">Verificação SisGeo  Aprovação (cadastra Área + gera proposta) ou Indeferimento.</p>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -46,7 +46,7 @@ export function ManagerAreaRequestsPage() {
         </header>
 
         {all.length === 0 ? (
-          <div className="card pad">Nenhuma solicitaÃ§Ã£o encontrada.</div>
+          <div className="card pad">Nenhuma solicitação encontrada.</div>
         ) : (
           <div className="grid" style={{ gap: 12 }}>
             {all.map((r) => (

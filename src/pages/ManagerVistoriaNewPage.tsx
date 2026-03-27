@@ -1,4 +1,4 @@
-﻿// src/pages/ManagerVistoriaNewPage.tsx
+// src/pages/ManagerVistoriaNewPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
@@ -13,7 +13,7 @@ import type { VistoriaChecklist, VistoriaFase } from "../domain/vistoria";
 const schema = z.object({
   fase: z.enum(["analise_pre_termo", "execucao_pos_termo"]),
   agendada_para: z.string().min(1, "Informe data/hora do agendamento."),
-  local_texto: z.string().min(3, "Informe a localizaÃ§Ã£o (texto)."),
+  local_texto: z.string().min(3, "Informe a Localização (texto)."),
 
   acesso: z.enum(["ok", "pendente", "nao_ok"]),
   iluminacao: z.enum(["ok", "pendente", "nao_ok"]),
@@ -44,7 +44,7 @@ export function ManagerVistoriaNewPage() {
   const [searchParams] = useSearchParams();
   const proposal_id = searchParams.get("proposal_id") ?? "";
 
-  // mantÃ©m proposta atualizada
+  // mantém proposta atualizada
   const [tickP, setTickP] = useState(0);
   useEffect(() => subscribeProposals(() => setTickP((t) => t + 1)), []);
 
@@ -67,7 +67,7 @@ export function ManagerVistoriaNewPage() {
     },
   });
 
-  // se quiser sugerir local usando nome da Ã¡rea:
+  // se quiser sugerir local usando nome da Área:
   useEffect(() => {
     if (proposal?.area_nome) {
       // sÃ³ preenche se vazio
@@ -114,7 +114,7 @@ export function ManagerVistoriaNewPage() {
 
       navigate(`/gestor/vistorias/${encodeURIComponent(v.id)}`, { replace: true });
     } catch (e: any) {
-      alert(e?.message ?? "NÃ£o foi possÃ­vel criar a vistoria.");
+      alert(e?.message ?? "não foi possÃ­vel criar a vistoria.");
     }
   };
 
@@ -127,7 +127,7 @@ export function ManagerVistoriaNewPage() {
             <p className="page__subtitle">
               {proposal ? (
                 <>
-                  <strong>{proposal.codigo_protocolo}</strong> â€” {proposal.area_nome}
+                  <strong>{proposal.codigo_protocolo}</strong> - {proposal.area_nome}
                 </>
               ) : (
                 "Vincule uma proposta via querystring ?proposal_id=..."
@@ -151,13 +151,13 @@ export function ManagerVistoriaNewPage() {
               <label style={{ fontWeight: 800 }}>
                 Fase
                 <select {...register("fase")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
-                  <option value="analise_pre_termo">AnÃ¡lise (prÃ©-termo)</option>
+                  <option value="analise_pre_termo">Análise (pré-termo)</option>
                   <option value="execucao_pos_termo">ExecuÃ§Ã£o (pÃ³s-termo)</option>
                 </select>
               </label>
 
               <label style={{ fontWeight: 800 }}>
-                Agendada para (data/hora) â€” obrigatÃ³rio
+                Agendada para (data/hora) - obrigatÃ³rio
                 <input
                   type="datetime-local"
                   {...register("agendada_para")}
@@ -168,7 +168,7 @@ export function ManagerVistoriaNewPage() {
             </div>
 
             <label style={{ fontWeight: 800 }}>
-              LocalizaÃ§Ã£o (texto) â€” obrigatÃ³rio
+              Localização (texto) - obrigatÃ³rio
               <input
                 {...register("local_texto")}
                 placeholder="Ex.: PraÃ§a X, Av. Y, prÃ³ximo a..."
@@ -186,7 +186,7 @@ export function ManagerVistoriaNewPage() {
                   <select {...register("acesso")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">NÃ£o OK</option>
+                    <option value="nao_ok">não OK</option>
                   </select>
                 </label>
 
@@ -195,7 +195,7 @@ export function ManagerVistoriaNewPage() {
                   <select {...register("iluminacao")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">NÃ£o OK</option>
+                    <option value="nao_ok">não OK</option>
                   </select>
                 </label>
 
@@ -204,7 +204,7 @@ export function ManagerVistoriaNewPage() {
                   <select {...register("limpeza")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">NÃ£o OK</option>
+                    <option value="nao_ok">não OK</option>
                   </select>
                 </label>
 
@@ -213,7 +213,7 @@ export function ManagerVistoriaNewPage() {
                   <select {...register("sinalizacao")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="ok">OK</option>
                     <option value="pendente">Pendente</option>
-                    <option value="nao_ok">NÃ£o OK</option>
+                    <option value="nao_ok">não OK</option>
                   </select>
                 </label>
 
@@ -221,7 +221,7 @@ export function ManagerVistoriaNewPage() {
                   Risco
                   <select {...register("risco")} style={{ width: "100%", marginTop: 6, padding: 10 }}>
                     <option value="baixo">Baixo</option>
-                    <option value="medio">MÃ©dio</option>
+                    <option value="medio">Médio</option>
                     <option value="alto">Alto</option>
                   </select>
                 </label>
@@ -248,7 +248,7 @@ export function ManagerVistoriaNewPage() {
             </div>
 
             <div className="muted">
-              Anexos e laudo sÃ£o adicionados no <strong>detalhe</strong> da vistoria (apÃ³s criar), para manter o fluxo â€œagendada â†’ realizada â†’ laudo_emitidoâ€.
+              Anexos e laudo sÃ£o adicionados no <strong>detalhe</strong> da vistoria (apÃ³s criar), para manter o fluxo â€œagendada  realizada  laudo_emitidoâ€.
             </div>
           </form>
         </div>

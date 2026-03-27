@@ -2,6 +2,8 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { proposalsService, vistoriasService } from "../services";
+import { useHttpApiEnabled } from "../lib/feature-flags";
+import { displayText } from "../lib/text";
 
 function fmtBR(iso?: string | null) {
   if (!iso) return "—";
@@ -14,11 +16,44 @@ export function MyProposalDetailPage() {
   const { id } = useParams();
   const { role } = useAuth();
   const navigate = useNavigate();
+  const httpEnabled = useHttpApiEnabled();
 
   const [tick, setTick] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [httpProposal, setHttpProposal] = useState<any | null>(null);
+
   useEffect(() => proposalsService.subscribe(() => setTick((t) => t + 1)), []);
 
-  const p = useMemo(() => (id ? proposalsService.getById(id) : null), [id, tick]);
+  useEffect(() => {
+    if (!httpEnabled || !id) {
+      setHttpProposal(null);
+      return;
+    }
+
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        await proposalsService.syncFromApi();
+        const found = await proposalsService.getByIdAsync(id);
+        if (alive) setHttpProposal(found);
+      } catch (err) {
+        console.error("Falha ao carregar proposta via API:", err);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [httpEnabled, id, tick]);
+
+  const p = useMemo(() => {
+    if (!id) return null;
+    if (httpEnabled) return httpProposal;
+    return proposalsService.getById(id);
+  }, [id, tick, httpEnabled, httpProposal]);
 
   const [tickV, setTickV] = useState(0);
   useEffect(() => vistoriasService.subscribe(() => setTickV((t) => t + 1)), []);
@@ -27,6 +62,18 @@ export function MyProposalDetailPage() {
     if (!p?.id) return [];
     return vistoriasService.listByProposal(p.id);
   }, [p?.id, tickV]);
+
+  const lastAdjust = useMemo(() => {
+    const hist = Array.isArray(p?.history) ? [...p.history] : [];
+    const candidates = hist.filter((e: any) => {
+      if (e?.type === "request_adjustments") return true;
+      if (e?.type === "move" && (e?.to === "ajustes" || e?.to_coluna === "ajustes") && e?.note) return true;
+      return false;
+    });
+    if (candidates.length === 0) return null;
+    candidates.sort((a: any, b: any) => String(a.at ?? "").localeCompare(String(b.at ?? "")));
+    return candidates[candidates.length - 1];
+  }, [p?.history]);
 
   if (!p) {
     return (
@@ -41,18 +88,6 @@ export function MyProposalDetailPage() {
     );
   }
 
-  const lastAdjust = useMemo(() => {
-    const hist = Array.isArray(p.history) ? [...p.history] : [];
-    const candidates = hist.filter((e: any) => {
-      if (e?.type === "request_adjustments") return true;
-      if (e?.type === "move" && (e?.to === "ajustes" || e?.to_coluna === "ajustes") && e?.note) return true;
-      return false;
-    });
-    if (candidates.length === 0) return null;
-    candidates.sort((a: any, b: any) => String(a.at ?? "").localeCompare(String(b.at ?? "")));
-    return candidates[candidates.length - 1];
-  }, [p.history]);
-
   const isInAdjustments = p.kanban_coluna === "ajustes";
   const isOwner = role != null && role === p.owner_role;
 
@@ -63,7 +98,9 @@ export function MyProposalDetailPage() {
           <div className="page__titlewrap">
             <h1 className="page__title">Detalhe da Minha Proposta</h1>
             <p className="page__subtitle">
-              Protocolo <strong>{p.codigo_protocolo}</strong> · {p.kanban_coluna}
+              Protocolo <strong>{displayText(p.codigo_protocolo)}</strong> · {displayText(p.kanban_coluna)}
+              {httpEnabled ? " · modo API" : " · modo local"}
+              {loading ? " · carregando..." : ""}
             </p>
           </div>
 
@@ -90,13 +127,13 @@ export function MyProposalDetailPage() {
 
             <p style={{ whiteSpace: "pre-wrap", marginBottom: 10 }}>
               {lastAdjust?.note?.trim()
-                ? lastAdjust.note
+                ? displayText(lastAdjust.note)
                 : "Há uma solicitação de ajustes para esta proposta. (Motivo não registrado no histórico antigo.)"}
             </p>
 
             <div className="muted" style={{ marginBottom: 10 }}>
-              Solicitado por: <strong>{lastAdjust?.actor_role ?? "—"}</strong> · em{" "}
-              <strong>{lastAdjust?.at ?? "—"}</strong>
+              Solicitado por: <strong>{displayText(lastAdjust?.actor_role, "—")}</strong> · em{" "}
+              <strong>{displayText(lastAdjust?.at, "—")}</strong>
             </div>
 
             {!isOwner ? (
@@ -109,10 +146,10 @@ export function MyProposalDetailPage() {
 
         <section className="card pad">
           <div className="item__meta">
-            <strong>Área:</strong> {p.area_nome}
+            <strong>Área:</strong> {displayText(p.area_nome)}
           </div>
           <div className="item__meta">
-            <strong>Status técnico:</strong> {p.kanban_coluna}
+            <strong>Status técnico:</strong> {displayText(p.kanban_coluna)}
           </div>
           <div className="item__meta">
             <strong>Criado em:</strong> {fmtBR(p.created_at)}
@@ -125,19 +162,17 @@ export function MyProposalDetailPage() {
         <div className="grid cols-2" style={{ marginTop: 12 }}>
           <section className="card pad">
             <h3 style={{ marginTop: 0 }}>Plano</h3>
-            <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>
-              {p.descricao_plano?.trim() ? p.descricao_plano : "—"}
-            </p>
+            <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{displayText(p.descricao_plano, "—")}</p>
           </section>
 
           <section className="card pad">
             <h3 style={{ marginTop: 0 }}>Documentos</h3>
             {p.documentos?.length ? (
               <ul style={{ margin: "6px 0 0 18px" }}>
-                {p.documentos.map((d, i) => (
+                {p.documentos.map((d: any, i: number) => (
                   <li key={`${d.tipo}-${i}`}>
-                    <strong>{d.tipo}</strong>: {d.file_name} ({Math.round(d.file_size / 1024)} KB)
-                    <div className="muted">{d.mime_type}</div>
+                    <strong>{displayText(d.tipo)}</strong>: {displayText(d.file_name)} ({Math.round((d.file_size ?? 0) / 1024)} KB)
+                    <div className="muted">{displayText(d.mime_type)}</div>
                   </li>
                 ))}
               </ul>
@@ -158,27 +193,26 @@ export function MyProposalDetailPage() {
                 <div key={v.id} className="card pad" style={{ background: "rgba(255,255,255,.72)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                     <strong>
-                      {v.fase ?? "—"} · {v.status ?? "—"}
+                      {displayText(v.fase, "—")} · {displayText(v.status, "—")}
                     </strong>
                     <span className="muted">Agendada: {fmtBR(v.agendada_para)}</span>
                   </div>
 
                   <div className="muted" style={{ marginTop: 6 }}>
-                    Local: {v.local_texto ?? "—"}
+                    Local: {displayText(v.local_texto, "—")}
                   </div>
 
                   {v.laudo ? (
                     <div style={{ marginTop: 8 }}>
                       <div>
-                        <strong>Laudo:</strong> {v.laudo.conclusao ?? "—"} · emitido em{" "}
-                        {fmtBR(v.laudo.emitido_em)}
+                        <strong>Laudo:</strong> {displayText(v.laudo.conclusao, "—")} · emitido em {fmtBR(v.laudo.emitido_em)}
                       </div>
                       <div className="muted" style={{ marginTop: 4 }}>
-                        Responsável: {v.laudo.responsavel_role ?? "—"}
+                        Responsável: {displayText(v.laudo.responsavel_role, "—")}
                       </div>
                       {v.laudo.recomendacoes ? (
                         <div className="muted" style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>
-                          {v.laudo.recomendacoes}
+                          {displayText(v.laudo.recomendacoes)}
                         </div>
                       ) : null}
                     </div>
@@ -197,11 +231,11 @@ export function MyProposalDetailPage() {
           <h3 style={{ marginTop: 0 }}>Histórico</h3>
           {p.history?.length ? (
             <ul style={{ margin: "6px 0 0 18px" }}>
-              {p.history.map((e) => (
+              {p.history.map((e: any) => (
                 <li key={e.id}>
-                  <strong>{fmtBR(e.at)}</strong> — <strong>{e.actor_role}</strong> — {e.type}
-                  {e.from || e.to ? ` (${e.from ?? "—"} → ${e.to ?? "—"})` : ""}
-                  {e.note ? ` — ${e.note}` : ""}
+                  <strong>{fmtBR(e.at)}</strong> — <strong>{displayText(e.actor_role)}</strong> — {displayText(e.type)}
+                  {e.from || e.to ? ` (${displayText(e.from, "—")} → ${displayText(e.to, "—")})` : ""}
+                  {e.note ? ` — ${displayText(e.note)}` : ""}
                 </li>
               ))}
             </ul>
@@ -213,8 +247,3 @@ export function MyProposalDetailPage() {
     </div>
   );
 }
-
-
-
-
-

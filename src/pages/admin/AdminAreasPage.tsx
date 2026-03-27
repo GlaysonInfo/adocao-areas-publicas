@@ -1,8 +1,9 @@
-﻿// src/pages/admin/AdminAreasPage.tsx
+// src/pages/admin/AdminAreasPage.tsx
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AreaPublica, AreaStatus, AreaArquivoMeta } from "../../domain/area";
 import { areasService } from "../../services";
+import { displayText } from "../../lib/text";
 
 const STATUS_LABEL: Record<AreaStatus, string> = {
   disponivel: "Disponível",
@@ -267,16 +268,16 @@ export function AdminAreasPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div>
                     <div style={{ fontWeight: 900 }}>
-                      {a.nome}{" "}
+                      {displayText(a.nome)}{" "}
                       <span style={{ fontWeight: 700, opacity: 0.75 }}>
                         ({a.codigo})
                       </span>
                     </div>
 
                     <div style={{ opacity: 0.88, marginTop: 6 }}>
-                      <strong>Tipo:</strong> {a.tipo}
+                      <strong>Tipo:</strong> {displayText(a.tipo)}
                       <br />
-                      <strong>Bairro:</strong> {a.bairro} · <strong>Metragem:</strong> {a.metragem_m2} m²
+                      <strong>Bairro:</strong> {displayText(a.bairro)} · <strong>Metragem:</strong> {a.metragem_m2} m²
                     </div>
 
                     <div style={{ opacity: 0.88, marginTop: 6 }}>
@@ -285,13 +286,13 @@ export function AdminAreasPage() {
 
                     {a.logradouro ? (
                       <div style={{ opacity: 0.88, marginTop: 6 }}>
-                        <strong>Logradouro:</strong> {a.logradouro}
+                        <strong>Logradouro:</strong> {displayText(a.logradouro)}
                       </div>
                     ) : null}
 
                     {a.restricoes ? (
                       <div style={{ opacity: 0.88, marginTop: 6 }}>
-                        <strong>Restrições:</strong> {a.restricoes}
+                        <strong>Restrições:</strong> {displayText(a.restricoes)}
                       </div>
                     ) : null}
 
@@ -488,6 +489,9 @@ export function AdminAreasPage() {
     </div>
   );
 }
+
+
+
 
 
 

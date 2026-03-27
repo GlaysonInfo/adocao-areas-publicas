@@ -1,9 +1,11 @@
-﻿// src/pages/ManagerKanbanPage.tsx
-import { useMemo, useState } from "react";
+// src/pages/ManagerKanbanPage.tsx
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { KanbanColuna, PropostaAdocao } from "../domain/proposal";
 import { proposalsService } from "../services";
 import { useAuth } from "../auth/AuthContext";
+import { useHttpApiEnabled } from "../lib/feature-flags";
+import { displayText } from "../lib/text";
 
 type Action = { label: string; to: KanbanColuna };
 
@@ -82,10 +84,35 @@ function askAjustesNote(): string | null {
 
 export function ManagerKanbanPage() {
   const { role } = useAuth();
+  const httpEnabled = useHttpApiEnabled();
+
   const [tick, setTick] = useState(0);
   const [dragOverCol, setDragOverCol] = useState<KanbanColuna | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const items = useMemo<PropostaAdocao[]>(() => proposalsService.listAll(), [tick]);
+  useEffect(() => proposalsService.subscribe(() => setTick((t) => t + 1)), []);
+
+  useEffect(() => {
+    if (!httpEnabled) return;
+
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        await proposalsService.syncFromApi();
+      } catch (err) {
+        console.error("Falha ao sincronizar propostas da API:", err);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [httpEnabled]);
+
+  const items = useMemo(() => proposalsService.listAll(), [tick]);
 
   const grouped = useMemo(() => {
     const map = new Map<KanbanColuna, PropostaAdocao[]>();
@@ -98,7 +125,7 @@ export function ManagerKanbanPage() {
     return map;
   }, [items]);
 
-  const doMove = (id: string, from: KanbanColuna, to: KanbanColuna) => {
+  const doMove = async (id: string, from: KanbanColuna, to: KanbanColuna) => {
     if (!canMove(role, from, to)) {
       alert("Transição não permitida para este perfil/etapa.");
       return;
@@ -113,7 +140,12 @@ export function ManagerKanbanPage() {
     }
 
     try {
-      proposalsService.move(id, to, role ?? "gestor", note);
+      await proposalsService.moveAsync({
+        id,
+        to,
+        actor_role: role ?? "gestor",
+        note,
+      });
       setTick((x) => x + 1);
     } catch (e: any) {
       alert(e?.message ?? "Erro ao mover proposta.");
@@ -125,6 +157,8 @@ export function ManagerKanbanPage() {
       <h2 style={{ marginBottom: 6 }}>Kanban do Gestor</h2>
       <p style={{ opacity: 0.8, marginTop: 0 }}>
         Perfil atual: <strong>{role ?? "—"}</strong>
+        {httpEnabled ? " · modo API" : " · modo local"}
+        {loading ? " · sincronizando..." : ""}
       </p>
 
       <div className="card kanbanShell">
@@ -150,7 +184,7 @@ export function ManagerKanbanPage() {
                     const data = unpackDrag(payload);
                     if (!data) return;
 
-                    doMove(data.id, data.from, col.key);
+                    void doMove(data.id, data.from, col.key);
                   }}
                   aria-label={`Coluna ${col.label}`}
                 >
@@ -163,7 +197,7 @@ export function ManagerKanbanPage() {
                     {colItems.length === 0 ? (
                       <div className="kanbanEmpty">Sem itens</div>
                     ) : (
-                      colItems.map((p: PropostaAdocao) => {
+                      colItems.map((p) => {
                         const fromCol = p.kanban_coluna as KanbanColuna;
                         const acts = actionsFor(role, fromCol);
 
@@ -178,10 +212,10 @@ export function ManagerKanbanPage() {
                               }}
                               title="Arraste para mover entre colunas"
                             >
-                              {p.codigo_protocolo}
+                              {displayText(p.codigo_protocolo)}
                             </div>
 
-                            <div className="kanbanCardMeta">{p.area_nome}</div>
+                            <div className="kanbanCardMeta">{displayText(p.area_nome)}</div>
 
                             <div className="kanbanCardActions">
                               <Link to={`/gestor/propostas/${encodeURIComponent(p.id)}`}>Abrir</Link>
@@ -191,7 +225,7 @@ export function ManagerKanbanPage() {
                                   key={`${p.id}_${fromCol}_${a.to}`}
                                   type="button"
                                   className="btn btn--sm"
-                                  onClick={() => doMove(p.id, fromCol, a.to)}
+                                  onClick={() => void doMove(p.id, fromCol, a.to)}
                                 >
                                   {a.label}
                                 </button>
@@ -211,5 +245,3 @@ export function ManagerKanbanPage() {
     </div>
   );
 }
-
-

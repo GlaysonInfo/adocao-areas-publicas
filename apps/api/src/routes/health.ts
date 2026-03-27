@@ -1,26 +1,28 @@
-import type { FastifyPluginAsync } from "fastify";
+﻿// apps/api/src/routes/health.ts
+import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 
-export const healthRoute: FastifyPluginAsync = async (app) => {
+export async function healthRoutes(app: FastifyInstance) {
   app.get(
     "/health",
     {
       schema: {
-        description: "Healthcheck",
-        tags: ["system"],
+        tags: ["health"],
         response: {
-          200: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              time: { type: "string" }
-            },
-            required: ["status", "time"]
-          }
-        }
-      }
+          200: z.object({
+            status: z.literal("ok"),
+            service: z.string(),
+            timestamp: z.string(),
+          }),
+        },
+      },
     },
     async () => {
-      return { status: "ok", time: new Date().toISOString() };
+      return {
+        status: "ok",
+        service: "adocao-areas-api",
+        timestamp: new Date().toISOString(),
+      };
     }
   );
-};
+}

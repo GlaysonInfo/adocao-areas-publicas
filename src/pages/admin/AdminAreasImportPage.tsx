@@ -1,4 +1,4 @@
-﻿// src/pages/admin/AdminAreasImportPage.tsx
+// src/pages/admin/AdminAreasImportPage.tsx
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AreaStatus } from "../../domain/area";
@@ -48,7 +48,7 @@ function normalizeStatus(raw: string): AreaStatus | null {
     .replace(/\s+/g, "_");
 
   if (s === "disponivel" || s === "disponivel_para_adocao") return "disponivel";
-  if (s === "em_adocao" || s === "em_adoÃ§Ã£o" || s === "em_adoacao") return "em_adocao";
+  if (s === "em_adocao" || s === "em_adoção" || s === "em_adoacao") return "em_adocao";
   if (s === "adotada" || s === "adotado") return "adotada";
 
   return null;
@@ -58,7 +58,7 @@ function parseBool(raw: string | undefined, fallback: boolean) {
   if (raw == null) return fallback;
   const s = stripAccents(String(raw)).toLowerCase().trim();
   if (["1", "true", "sim", "s", "ativo", "ativa", "yes", "y"].includes(s)) return true;
-  if (["0", "false", "nao", "nÃ£o", "n", "inativo", "inativa", "no"].includes(s)) return false;
+  if (["0", "false", "nao", "não", "n", "inativo", "inativa", "no"].includes(s)) return false;
   return fallback;
 }
 
@@ -138,7 +138,7 @@ function buildTemplateCSV() {
       "Av. Principal, s/n",
       "850",
       "disponivel",
-      "NÃ£o permite estruturas permanentes.",
+      "não permite estruturas permanentes.",
       "sim",
       "-19,965",
       "-44,199",
@@ -240,7 +240,7 @@ export function AdminAreasImportPage() {
 
       if (values.ativo) {
         // sÃ³ valida â€œse parece booleanâ€
-        parseBool(values.ativo, true); // nÃ£o gera erro, mas â€œnormalizaâ€
+        parseBool(values.ativo, true); // não gera erro, mas â€œnormalizaâ€
       }
 
       let action: PreviewRow["action"] = "pular";
@@ -299,7 +299,7 @@ export function AdminAreasImportPage() {
 
     const hasAnyValid = preview.rows.some((r) => r.action === "criar" || r.action === "atualizar");
     if (!hasAnyValid) {
-      alert("NÃ£o hÃ¡ linhas vÃ¡lidas para aplicar (todas estÃ£o como 'Pular'). Ajuste o CSV e tente novamente.");
+      alert("não hÃ¡ linhas vÃ¡lidas para aplicar (todas estÃ£o como 'Pular'). Ajuste o CSV e tente novamente.");
       return;
     }
 
@@ -322,9 +322,9 @@ export function AdminAreasImportPage() {
       <div className="card pad">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ marginTop: 0 }}>Admin Â· Importar Ãreas (CSV)</h2>
+            <h2 style={{ marginTop: 0 }}>Admin : Importar Áreas (CSV)</h2>
             <p style={{ marginTop: 6 }}>
-              FaÃ§a upload do CSV, valide no preview e aplique para criar/atualizar Ã¡reas (chave: <strong>codigo</strong>).
+              Faça upload do CSV, valide no preview e aplique para criar/atualizar Áreas (chave: <strong>codigo</strong>).
             </p>
           </div>
 
@@ -362,7 +362,7 @@ export function AdminAreasImportPage() {
                 <strong>Status aceitos:</strong> disponivel | em_adocao | adotada
               </div>
               <div>
-                <strong>Opcional:</strong> restricoes, ativo (sim/nÃ£o), latitude_centro, longitude_centro
+                <strong>Opcional:</strong> restricoes, ativo (sim/não), latitude_centro, longitude_centro
               </div>
             </div>
           </div>
@@ -371,8 +371,8 @@ export function AdminAreasImportPage() {
         {parsed ? (
           <>
             <div style={{ marginTop: 14 }}>
-              <strong>Detectado:</strong> delimitador <code>{parsed.delimiter}</code> Â· colunas{" "}
-              <strong>{parsed.headers.length}</strong> Â· linhas <strong>{parsed.rows.length}</strong>
+              <strong>Detectado:</strong> delimitador <code>{parsed.delimiter}</code> : colunas{" "}
+              <strong>{parsed.headers.length}</strong> : linhas <strong>{parsed.rows.length}</strong>
             </div>
 
             {headerErrors.length > 0 ? (
@@ -390,8 +390,8 @@ export function AdminAreasImportPage() {
                   <div>
                     <h3 style={{ marginTop: 0 }}>Preview (validaÃ§Ã£o)</h3>
                     <p style={{ marginTop: 6 }}>
-                      AÃ§Ãµes previstas: <strong>Criar</strong> ({preview.counts.criar}) Â·{" "}
-                      <strong>Atualizar</strong> ({preview.counts.atualizar}) Â· <strong>Pular</strong> ({preview.counts.pular})
+                      AÃ§Ãµes previstas: <strong>Criar</strong> ({preview.counts.criar}) :{" "}
+                      <strong>Atualizar</strong> ({preview.counts.atualizar}) : <strong>Pular</strong> ({preview.counts.pular})
                     </p>
                   </div>
 
@@ -444,28 +444,28 @@ export function AdminAreasImportPage() {
                               <strong>{actionLabel}</strong>
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.codigo || <span style={{ opacity: 0.6 }}>â€”</span>}
+                              {v.codigo || <span style={{ opacity: 0.6 }}>-</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.nome || <span style={{ opacity: 0.6 }}>â€”</span>}
+                              {v.nome || <span style={{ opacity: 0.6 }}>-</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.tipo || <span style={{ opacity: 0.6 }}>â€”</span>}
+                              {v.tipo || <span style={{ opacity: 0.6 }}>-</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.bairro || <span style={{ opacity: 0.6 }}>â€”</span>}
+                              {v.bairro || <span style={{ opacity: 0.6 }}>-</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.logradouro || <span style={{ opacity: 0.6 }}>â€”</span>}
+                              {v.logradouro || <span style={{ opacity: 0.6 }}>-</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.metragem_m2 || <span style={{ opacity: 0.6 }}>â€”</span>}
+                              {v.metragem_m2 || <span style={{ opacity: 0.6 }}>-</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.status || <span style={{ opacity: 0.6 }}>â€”</span>}
+                              {v.status || <span style={{ opacity: 0.6 }}>-</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
-                              {v.ativo ? String(parseBool(v.ativo, true) ? "Sim" : "NÃ£o") : <span style={{ opacity: 0.6 }}>â€”</span>}
+                              {v.ativo ? String(parseBool(v.ativo, true) ? "Sim" : "não") : <span style={{ opacity: 0.6 }}>-</span>}
                             </td>
                             <td style={{ padding: "10px 10px", borderBottom: "1px solid rgba(15,23,42,.08)" }}>
                               {r.errors.length === 0 ? (
@@ -496,9 +496,9 @@ export function AdminAreasImportPage() {
 
             {report ? (
               <div className="card pad" style={{ marginTop: 12, background: "rgba(255,255,255,.72)" }}>
-                <h3 style={{ marginTop: 0 }}>RelatÃ³rio final</h3>
+                <h3 style={{ marginTop: 0 }}>Relatório final</h3>
                 <p style={{ marginTop: 6 }}>
-                  <strong>Criadas:</strong> {report.created} Â· <strong>Atualizadas:</strong> {report.updated} Â·{" "}
+                  <strong>Criadas:</strong> {report.created} : <strong>Atualizadas:</strong> {report.updated} :{" "}
                   <strong>Puladas:</strong> {report.skipped}
                 </p>
 
@@ -539,7 +539,7 @@ export function AdminAreasImportPage() {
 
                 <div style={{ marginTop: 12 }}>
                   <Link className="btn btn--primary" to="/admin/areas">
-                    Voltar para Admin Â· Ãreas
+                    Voltar para Admin : Áreas
                   </Link>
                 </div>
               </div>

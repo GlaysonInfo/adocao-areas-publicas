@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { vistoriasService } from "../services/vistorias.service";
 
@@ -17,7 +17,7 @@ function includesSmart(hay: string, needle: string) {
 }
 
 function fmtBR(iso?: string | null) {
-  if (!iso) return "â€”";
+  if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
   return d.toLocaleString("pt-BR");
@@ -222,13 +222,13 @@ export function ManagerVistoriasPage() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <div>
                   <strong>
-                    {v.codigo_protocolo ?? "â€”"} Â· {v.status ?? "â€”"}
+                    {v.codigo_protocolo ?? "-"} : {v.status ?? "-"}
                   </strong>
                   <div className="muted" style={{ marginTop: 4 }}>
-                    Ãrea: {v.area_nome ?? "â€”"}
+                    Área: {v.area_nome ?? "-"}
                   </div>
                   <div className="muted">Agendada: {fmtBR(v.agendada_para)}</div>
-                  <div className="muted">Local: {v.local_texto ?? "â€”"}</div>
+                  <div className="muted">Local: {v.local_texto ?? "-"}</div>
                 </div>
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
